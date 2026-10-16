@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { runCpp } from "@/lib/codeRunner";
 import { loadUnits, loadAllProgress, saveProgress, saveMissionSubmission } from "@/lib/dataAccess";
 import { getSessionUser, getSessionToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -11,9 +10,9 @@ import {
 } from "lucide-react";
 import CppCodeEditor from "@/components/student/CppCodeEditor";
 import CppExamplePractice from "@/components/student/CppExamplePractice";
-import CppStdinInput from "@/components/student/CppStdinInput";
 import QuestionPanel from "@/components/student/QuestionPanel";
 import InteractiveCodeBlock from "@/components/student/InteractiveCodeBlock";
+import CppUnsupportedNotice from "@/components/student/CppUnsupportedNotice";
 import UnitToc from "@/components/student/UnitToc";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -32,7 +31,6 @@ function CppMissionPanel({ missions, user, unitId, unitTitle, progress, onProgre
   const [codes, setCodes] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState(null);
-  const [stdinValues, setStdinValues] = useState({});
   const completed = progress?.completed_mission_ids || [];
 
   useEffect(() => {
@@ -62,66 +60,25 @@ function CppMissionPanel({ missions, user, unitId, unitTitle, progress, onProgre
     setSubmitting(true);
     setSubmitResult(null);
     try {
-      // 1단계: 코드 실행
-      let data;
-      try {
-        data = await runCpp({ code: codes[idx] || DEFAULT_CPP, stdin: stdinValues[idx] || "" });
-      } catch (runErr) {
-        console.error("[CppMission] 코드 실행 실패:", runErr);
-        toast({ title: "코드 실행 서버 연결 실패", description: "코드 실행 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.", variant: "destructive" });
-        return;
-      }
-      const output = (data.output || "").trim();
-      const expected = (mission.expected_output || "").trim();
-      const isCorrect = expected ? output === expected : data.exit_code === 0;
-
-      // 2단계: 제출 기록 저장 + 진행도 업데이트 (단일 RPC 트랜잭션)
-      let progressUpdate = null;
-      if (isCorrect) {
-        const newCompleted = completed.includes(idx) ? completed : [...completed, idx];
-        const rate = missions.length ? Math.round((newCompleted.length / missions.length) * 100) : 0;
-        progressUpdate = {
-          completed_mission_ids: newCompleted,
-          mission_progress_rate: rate,
-        };
-      }
-
-      try {
-        await saveMissionSubmission(sid, unitId, mission.number || idx + 1, {
-          mission_description: mission.description || "",
-          submitted_code: codes[idx] || "",
-          execution_result: output,
-          expected_output: expected,
-          is_correct: isCorrect,
-        }, { studentName: user.name, unitTitle, unitType: "cpp" }, progressUpdate);
-      } catch (dbErr) {
-        console.error("[CppMission] 제출 기록 저장 실패:", {
-          errorMessage: dbErr?.message,
-          studentId: sid, unitId, missionNumber: mission.number || idx + 1,
-          itemType: "mission",
-          hasSessionToken: !!getSessionToken(),
-        });
-        const isMismatch = (dbErr?.message || "").includes("일치하지 않습니다");
-        toast({
-          title: isMismatch ? "계정 연결 오류" : "저장 실패",
-          description: isMismatch
-            ? "학생 계정 연결 정보가 일치하지 않습니다."
-            : isCorrect
-              ? "정답입니다. 다만 제출 기록 저장에 실패했습니다."
-              : "코드 실행은 완료되었지만 제출 기록 저장에 실패했습니다. 다시 시도해 주세요.",
-          variant: "destructive",
-        });
-        setSubmitResult({ isCorrect, output, expected, saveFailed: true });
-        return;
-      }
-
-      if (isCorrect) {
-        onProgressUpdate();
-        toast({ title: "✅ 정답입니다!", description: "미션을 완료했습니다." });
-      } else {
-        toast({ title: "제출 완료", description: "틀렸습니다. 다시 시도해 보세요." });
-      }
-      setSubmitResult({ isCorrect, output, expected });
+      // C++ 은 실행·자동 채점을 지원하지 않으므로 코드만 제출합니다.
+      await saveMissionSubmission(sid, unitId, mission.number || idx + 1, {
+        mission_description: mission.description || "",
+        submitted_code: codes[idx] || "",
+        execution_result: "",
+        expected_output: (mission.expected_output || "").trim(),
+        is_correct: false,
+        grading_supported: false,
+      }, { studentName: user.name, unitTitle, unitType: "cpp" }, null);
+      toast({ title: "제출 완료", description: "선생님이 직접 확인합니다." });
+      setSubmitResult({ submitted: true });
+    } catch (dbErr) {
+      console.error("[CppMission] 제출 기록 저장 실패:", {
+        errorMessage: dbErr?.message,
+        studentId: sid, unitId, missionNumber: mission.number || idx + 1,
+        itemType: "mission",
+        hasSessionToken: !!getSessionToken(),
+      });
+      toast({ title: "저장 실패", description: "제출 기록 저장에 실패했습니다. 다시 시도해 주세요.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -162,31 +119,23 @@ function CppMissionPanel({ missions, user, unitId, unitTitle, progress, onProgre
           </div>
         )}
       </div>
+      <CppUnsupportedNotice className="mb-3" />
       <CppCodeEditor
         value={codes[idx] || mission.default_code || DEFAULT_CPP}
         onChange={v => setCodes(prev => ({ ...prev, [idx]: v }))}
         defaultCode={mission.default_code || DEFAULT_CPP}
         height="220px"
         autoSaveKey={`cpp_mission_${unitId}_${idx}`}
-        storagePrefix="coda_autosave_"
         showRunButton={false}
       />
-      <CppStdinInput
-        value={stdinValues[idx] || ""}
-        onChange={v => setStdinValues(s => ({ ...s, [idx]: v }))}
-        code={codes[idx] || mission.default_code || ""}
-        defaultStdin={mission.default_stdin || ""}
-        description={mission.stdin_description || ""}
-      />
-      <Button onClick={handleSubmit} disabled={submitting || isDone}
+      <Button onClick={handleSubmit} disabled={submitting}
         className="mt-3 bg-blue-700 hover:bg-blue-800 gap-1.5">
         <Target className="w-3.5 h-3.5" />
-        {submitting ? "제출 중..." : isDone ? "완료됨" : "제출하기"}
+        {submitting ? "제출 중..." : "코드 제출"}
       </Button>
       {submitResult && (
-        <div className={`mt-3 p-3 rounded-lg border text-sm ${submitResult.isCorrect ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
-          {submitResult.isCorrect ? "✅ 정답입니다!" : "❌ 틀렸습니다. 다시 시도해보세요."}
-          {submitResult.output && <pre className="mt-1 text-xs font-mono">{submitResult.output}</pre>}
+        <div className="mt-3 p-3 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-800">
+          제출되었습니다. C++ 은 자동 채점을 지원하지 않아 선생님이 직접 확인합니다.
         </div>
       )}
     </div>
@@ -278,6 +227,11 @@ export default function StudentCppUnits() {
             {qCount > 0 && <div className="flex items-center gap-2"><span className="text-xs text-gray-500">Question:</span><span className="text-xs font-bold text-cyan-700">{cQ}/{qCount}</span>{cQ >= qCount && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}</div>}
             {mCount > 0 && <div className="flex items-center gap-2"><span className="text-xs text-gray-500">Mission:</span><span className="text-xs font-bold text-orange-700">{cM}/{mCount}</span>{cM >= mCount && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}</div>}
             {progress?.is_unit_completed && <Badge className="bg-green-100 text-green-700 border-0 gap-1 ml-auto"><CheckCircle className="w-3 h-3" />Unit 완료!</Badge>}
+          </div>
+          <div className="px-6 py-2.5 bg-amber-50 border-t border-amber-100">
+            <p className="text-xs text-amber-800">
+              이 Unit의 C++ 코드 실행은 지원하지 않습니다. 코드 작성·저장과 예제 코드 비교 확인은 사용할 수 있습니다.
+            </p>
           </div>
         </div>
 

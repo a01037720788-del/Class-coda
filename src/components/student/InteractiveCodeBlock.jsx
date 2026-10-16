@@ -4,6 +4,7 @@ import { runPython, runCpp } from "@/lib/codeRunner";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Play, RotateCcw } from "lucide-react";
 import StdinInput from "./StdinInput";
+import { CPP_UNSUPPORTED_SHORT } from "./CppUnsupportedNotice";
 
 const LS_KEY = (blockId) => `interactive_block_${blockId}`;
 
@@ -33,7 +34,15 @@ export default function InteractiveCodeBlock({ ic, blockId, language = "python" 
     persist({ code: originalCode, stdin: "", result: null, compared: null });
   };
 
+  const isCpp = language === "cpp" || ic.language === "cpp";
+
   const run = async () => {
+    // C++ 은 실행을 지원하지 않습니다 (외부 실행 서비스도 사용하지 않음)
+    if (isCpp) {
+      setResult(CPP_UNSUPPORTED_SHORT);
+      setCompared(null);
+      return;
+    }
     setRunning(true);
     setCompared(null);
     try {
@@ -107,20 +116,26 @@ export default function InteractiveCodeBlock({ ic, blockId, language = "python" 
         )}
       </div>
 
-      <StdinInput
-        value={stdin}
-        onChange={setStdin}
-        code={code}
-        forceShow={ic.uses_input === true}
-        defaultStdin={ic.default_stdin || ""}
-        description={ic.stdin_description || ""}
-      />
+      {!isCpp && (
+        <StdinInput
+          value={stdin}
+          onChange={setStdin}
+          code={code}
+          forceShow={ic.uses_input === true}
+          defaultStdin={ic.default_stdin || ""}
+          description={ic.stdin_description || ""}
+        />
+      )}
 
       <div className="bg-gray-900 px-3 py-2 flex items-center gap-2 border-t border-gray-800">
-        <Button size="sm" onClick={run} disabled={running}
-          className="h-7 text-xs bg-green-600 hover:bg-green-700 gap-1">
-          <Play className="w-3 h-3" />{running ? "실행 중..." : "실행"}
-        </Button>
+        {isCpp ? (
+          <span className="text-xs text-amber-400">{CPP_UNSUPPORTED_SHORT}</span>
+        ) : (
+          <Button size="sm" onClick={run} disabled={running}
+            className="h-7 text-xs bg-green-600 hover:bg-green-700 gap-1">
+            <Play className="w-3 h-3" />{running ? "실행 중..." : "실행"}
+          </Button>
+        )}
         {isEditable && originalCode && (
           <button onClick={reset} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 transition-colors">
             <RotateCcw className="w-3 h-3" />원본 복원

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { runCpp } from "@/lib/codeRunner";
 import { saveExamplePractice } from "@/lib/dataAccess";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, RefreshCw, CheckCircle2, ChevronDown, ChevronUp, Eye, CheckSquare } from "lucide-react";
+import { RefreshCw, CheckCircle2, ChevronDown, ChevronUp, Eye, CheckSquare } from "lucide-react";
 import CppCodeEditor from "./CppCodeEditor";
-import CppStdinInput from "./CppStdinInput";
+import { CPP_UNSUPPORTED_SHORT } from "./CppUnsupportedNotice";
 import { storageSave, storageLoad } from "@/lib/storageService";
 import { useToast } from "@/components/ui/use-toast";
 import { highlightCode } from "@/lib/syntaxHighlight";
@@ -24,13 +23,10 @@ function normalizeCppCode(code) {
 export default function CppExamplePractice({ exampleCodes = [], user, unitId, unitTitle, progress, onProgressUpdate }) {
   const { toast } = useToast();
   const [studentCodes, setStudentCodes] = useState({});
-  const [results, setResults] = useState({});
-  const [running, setRunning] = useState({});
   const [checking, setChecking] = useState({});
   const [collapsed, setCollapsed] = useState({});
   const [showCompleted, setShowCompleted] = useState(true);
   const [localCompleted, setLocalCompleted] = useState([]);
-  const [stdinValues, setStdinValues] = useState({});
 
   const sid = user?.student_id;
   const completedIds = [
@@ -42,16 +38,12 @@ export default function CppExamplePractice({ exampleCodes = [], user, unitId, un
   useEffect(() => {
     if (!sid || !unitId) return;
     const codes = {};
-    const res = {};
     exampleCodes.forEach((ec, idx) => {
       const key = `coda_cpp_ex_${sid}_${unitId}_${idx}`;
       const saved = storageLoad(key);
       if (saved) codes[idx] = saved;
-      const savedResult = storageLoad(`coda_cpp_res_${sid}_${unitId}_${idx}`);
-      if (savedResult) res[idx] = savedResult;
     });
     setStudentCodes(codes);
-    setResults(res);
   }, [sid, unitId, exampleCodes.length]);
 
   useEffect(() => {
@@ -63,35 +55,6 @@ export default function CppExamplePractice({ exampleCodes = [], user, unitId, un
   const saveCode = (idx, code) => {
     if (sid && unitId) storageSave(`coda_cpp_ex_${sid}_${unitId}_${idx}`, code);
   };
-  const saveResult = (idx, data) => {
-    if (sid && unitId) storageSave(`coda_cpp_res_${sid}_${unitId}_${idx}`, data);
-  };
-
-  // ── 실행 ──────────────────────────────────────────────────────────────────
-  const handleRun = async (idx) => {
-    const code = studentCodes[idx] ?? "";
-    if (!code.trim()) {
-      toast({ title: "코드를 입력해주세요.", variant: "destructive" });
-      return;
-    }
-    setRunning(r => ({ ...r, [idx]: true }));
-    try {
-      const stdin = stdinValues[idx] || "";
-      const data = await runCpp({ code, mode: "simple", stdin });
-      const output = data?.output || "";
-      const error = data?.error || "";
-      const resultData = { output, error };
-      setResults(r => ({ ...r, [idx]: resultData }));
-      saveResult(idx, resultData);
-    } catch (err) {
-      const errMsg = err?.message || "실행 중 오류가 발생했습니다.";
-      setResults(r => ({ ...r, [idx]: { output: "", error: errMsg } }));
-      toast({ title: "코드 실행 실패", description: errMsg, variant: "destructive" });
-    } finally {
-      setRunning(r => ({ ...r, [idx]: false }));
-    }
-  };
-
   // ── 작성 확인 (코드 비교) ──────────────────────────────────────────────────
   const handleCheck = async (idx, ec) => {
     if (!sid) {
@@ -127,8 +90,8 @@ export default function CppExamplePractice({ exampleCodes = [], user, unitId, un
           await saveExamplePractice(sid, unitId, idx, {
             filename: ec.filename || "",
             typed_code: code,
-            stdin: stdinValues[idx] || "",
-            execution_result: results[idx]?.output || "",
+            stdin: "",
+            execution_result: "",
             expected_output: ec.expected_output || "",
             is_matched: true,
           }, { studentName: user?.name || "", unitTitle: unitTitle || "", unitType: "cpp" }, progressUpdate);
@@ -166,6 +129,7 @@ export default function CppExamplePractice({ exampleCodes = [], user, unitId, un
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-500">
           완료 <span className="font-bold text-green-600">{completedCount}</span> / {totalCount}
+          <span className="ml-2 text-amber-700">· C++ 실행 미지원</span>
         </p>
         <div className="flex gap-2">
           {completedCount > 0 && (
@@ -188,10 +152,8 @@ export default function CppExamplePractice({ exampleCodes = [], user, unitId, un
 
       {exampleCodes.map((ec, idx) => {
         const isCompleted = completedIds.includes(idx);
-        const result = results[idx];
         const studentCode = studentCodes[idx] ?? "";
         const isCollapsed = collapsed[idx] ?? false;
-        const isRunning = !!running[idx];
         const isChecking = !!checking[idx];
         const referenceCode = ec.reference_code || ec.code || "";
         const starterCode = ec.starter_code || "";
@@ -262,20 +224,11 @@ export default function CppExamplePractice({ exampleCodes = [], user, unitId, un
                       showRunButton={false}
                       height="200px"
                     />
-                    <CppStdinInput
-                      value={stdinValues[idx] || ""}
-                      onChange={v => setStdinValues(s => ({ ...s, [idx]: v }))}
-                      code={studentCode}
-                      defaultStdin={ec.default_stdin || ""}
-                      description={ec.stdin_description || ""}
-                    />
+                    <p className="mt-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                      {CPP_UNSUPPORTED_SHORT} 작성한 코드는 ‘작성 확인’으로 완성 코드와 비교해 볼 수 있습니다.
+                    </p>
                     <div className="flex gap-2 mt-2 flex-wrap">
-                      <Button size="sm" onClick={() => handleRun(idx)} disabled={isRunning || isChecking}
-                        className="gap-1.5 bg-green-600 hover:bg-green-700 text-white">
-                        <Play className="w-3.5 h-3.5" />
-                        {isRunning ? "실행 중..." : "실행"}
-                      </Button>
-                      <Button size="sm" onClick={() => handleCheck(idx, ec)} disabled={isRunning || isChecking}
+                      <Button size="sm" onClick={() => handleCheck(idx, ec)} disabled={isChecking}
                         className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
                         <CheckSquare className="w-3.5 h-3.5" />
                         {isChecking ? "확인 중..." : "작성 확인"}
@@ -283,22 +236,11 @@ export default function CppExamplePractice({ exampleCodes = [], user, unitId, un
                       <Button size="sm" variant="outline"
                         onClick={() => {
                           setStudentCodes(c => ({ ...c, [idx]: starterCode || "" }));
-                          setResults(r => ({ ...r, [idx]: null }));
                           saveCode(idx, starterCode || "");
-                          saveResult(idx, null);
                         }}>
                         <RefreshCw className="w-3.5 h-3.5" />초기화
                       </Button>
                     </div>
-
-                    {result && (
-                      <div className="mt-2 rounded-lg border p-2 text-xs font-mono bg-gray-950 border-gray-700 text-gray-200">
-                        <p className={`text-xs font-semibold mb-1 font-sans ${result.error ? "text-red-400" : "text-green-400"}`}>
-                          {result.error ? "❌ 에러" : "✅ 실행 결과"}
-                        </p>
-                        <pre className="whitespace-pre-wrap break-all">{result.error || result.output || "(출력 없음)"}</pre>
-                      </div>
-                    )}
                   </div>
                 </div>
               </>

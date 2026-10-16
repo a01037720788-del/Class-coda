@@ -1,10 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, RefreshCw, Save } from "lucide-react";
-import { runCpp } from "@/lib/codeRunner";
+import { RefreshCw, Save } from "lucide-react";
 import { EDITOR_THEMES } from "@/hooks/useEditorSettings";
 import CodeEditor from "./CodeEditor";
-import CppStdinInput from "./CppStdinInput";
+import CppUnsupportedNotice from "./CppUnsupportedNotice";
 
 function getStoredEditorSettings() {
   try { const s = localStorage.getItem("coda_editor_settings"); return s ? JSON.parse(s) : null; }
@@ -31,10 +30,7 @@ export default function CppCodeEditor({
   autoSaveKey = null,
   onAutoSave = null,
 }) {
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState(null);
   const [savedAt, setSavedAt] = useState(null);
-  const [stdin, setStdin] = useState("");
   const autoSaveTimer = useRef(null);
 
   useEffect(() => {
@@ -59,26 +55,8 @@ export default function CppCodeEditor({
   const themeKey = es?.theme || "vscode-dark";
   const editorTheme = EDITOR_THEMES[themeKey] || EDITOR_THEMES["vscode-dark"];
 
-  const handleRun = async () => {
-    setRunning(true);
-    setResult(null);
-    try {
-      const data = await runCpp({ code: value, stdin });
-      setResult(data);
-      if (onRun) onRun(data);
-    } catch (e) {
-      const errData = { error: e.message || "실행 오류" };
-      setResult(errData);
-      if (onRun) onRun(errData);
-    } finally {
-      setRunning(false);
-    }
-  };
-
   const handleReset = () => {
     onChange(defaultCode);
-    setResult(null);
-    setStdin("");
     if (autoSaveKey) localStorage.removeItem(`autosave_${autoSaveKey}`);
   };
 
@@ -103,36 +81,20 @@ export default function CppCodeEditor({
       </div>
 
       {showRunButton && !readOnly && (
-        <CppStdinInput value={stdin} onChange={setStdin} code={value || ""} />
-      )}
-      {showRunButton && !readOnly && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" onClick={handleRun} disabled={running || !value?.trim()}
-            className="bg-blue-600 hover:bg-blue-700 gap-1.5">
-            <Play className="w-3.5 h-3.5" />
-            {running ? "실행 중..." : "실행하기"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleReset} className="gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5" />초기화
-          </Button>
-          {autoSaveKey && savedAt && (
-            <span className="flex items-center gap-1 text-[11px] text-gray-400 ml-1">
-              <Save className="w-3 h-3" />
-              {savedAt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} 자동 저장됨
-            </span>
-          )}
-        </div>
-      )}
-
-      {result && (
-        <div className={`rounded-lg border text-xs font-mono p-3 ${
-          result.error ? "bg-red-950 border-red-800 text-red-300" : "bg-gray-950 border-gray-700 text-gray-200"
-        }`}>
-          <p className={`text-xs font-semibold mb-1 font-sans ${result.error ? "text-red-400" : "text-blue-400"}`}>
-            {result.error ? "❌ 에러" : "✅ 실행 결과 (C++17)"}
-          </p>
-          <pre className="whitespace-pre-wrap break-all">{result.error || result.output || "(출력 없음)"}</pre>
-        </div>
+        <>
+          <CppUnsupportedNotice />
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={handleReset} className="gap-1.5">
+              <RefreshCw className="w-3.5 h-3.5" />초기화
+            </Button>
+            {autoSaveKey && savedAt && (
+              <span className="flex items-center gap-1 text-[11px] text-gray-400 ml-1">
+                <Save className="w-3 h-3" />
+                {savedAt.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} 자동 저장됨
+              </span>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

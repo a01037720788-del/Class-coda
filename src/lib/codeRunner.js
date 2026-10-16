@@ -10,14 +10,15 @@
  *   - input() 프롬프트는 stdout에 출력하지 않도록 monkey-patch (기존 LLM 시뮬레이션 동작 유지)
  *   - Web Worker에서 실행 → 무한 루프 시 worker 종료로 브라우저 정지 방지
  *
- * - C++ 1순위: Judge0 CE (https://ce.judge0.com)
- *   - 실제 C++ 컴파일·실행 (LLM 시뮬레이션이 아님)
- *   - 샌드박스 컨테이너 실행 (파일시스템·네트워크 차단, 메모리·시간 제한)
+ * - C++: 실행 미지원 (화면에 명확히 안내)
+ *   - 브라우저만으로는 C++ 를 컴파일할 수 없어 실행 기능을 제공하지 않습니다.
+ *   - 외부 실행 서비스도 사용하지 않습니다. runCpp() 은 실행을 시도하지 않고
+ *     "미지원" 결과를 즉시 반환합니다.
  *
- * - 2순위(폴백): Base44 Functions (runPythonCode / runCppCode)
- *   - 1순위 실행 실패 시 자동 전환
+ * - 2순위(폴백): Base44 Functions (runPythonCode)
+ *   - Pyodide 를 사용할 수 없을 때만 사용
  *
- * 반환 포맷은 기존 base44.functions.invoke("runPythonCode"|"runCppCode") 의 res.data 와 동일:
+ * 반환 포맷은 기존 base44.functions.invoke("runPythonCode") 의 res.data 와 동일:
  *   simple: { output, error, exit_code }
  *   judge:  { mode, total, passed, results, verdict, ... }
  */
@@ -238,102 +239,6 @@ function checkInputCount(code, stdin) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  Judge0 CE API (C++ execution)
-// ═════════════════════════════════════════════════════════════════════════════
-
-const JUDGE0_URL = "https://ce.judge0.com/submissions/?base64_encoded=false&wait=true";
-const JUDGE0_CPP_ID = 54;  // C++ (GCC 9.2.0)
-const JUDGE0_PY_ID = 71;   // Python 3 — 폴백용
-
-async function runViaJudge0(languageId, code, stdin, timeout) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
-  try {
-    const res = await fetch(JUDGE0_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source_code: code,
-        language_id: languageId,
-        stdin: stdin || "",
-        cpu_time_limit: Math.ceil((timeout || 5000) / 1000),
-        memory_limit: 256000,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`Judge0 HTTP ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
-}
-
-async function runCppSimpleViaJudge0(code, stdin, timeout) {
-  const data = await runViaJudge0(JUDGE0_CPP_ID, code, stdin, timeout);
-  const status = data.status?.id;
-  const compileOutput = data.compile_output || "";
-  const stderr = data.stderr || "";
-  const stdout = data.stdout || "";
-
-  // Judge0 status: 1=In Queue, 2=Processing, 3=Accepted, 4=Wrong Answer, 5=Time Limit Exceeded,
-  // 6=Compilation Error, 7=Runtime Error, ...
-  if (status === 6) {
-    return { output: "", error: compileOutput || "컴파일 오류가 발생했습니다.", exit_code: 1 };
-  }
-  if (status === 5) {
-    return { output: "", error: "시간 초과가 발생했습니다.", exit_code: 1 };
-  }
-  if (status === 7 || stderr) {
-    return { output: stdout || "", error: stderr || "런타임 오류가 발생했습니다.", exit_code: 1 };
-  }
-  return { output: stdout, error: "", exit_code: 0 };
-}
-
-async function runCppJudgeViaJudge0(code, testCases, timeout) {
-  // 컴파일 검사를 위해 한 번 실행
-  const probe = await runViaJudge0(JUDGE0_CPP_ID, code, "", timeout);
-  if (probe.status?.id === 6) {
-    return {
-      mode: "judge", total: testCases.length, passed: 0,
-      results: testCases.map((tc) => ({
-        input: tc.input || "",
-        expected: (tc.output || tc.expected_output || "").trim(),
-        actual: "Compilation Error", passed: false,
-      })),
-      verdict: "COMPILE_ERROR",
-    };
-  }
-
-  const results = [];
-  for (const tc of testCases) {
-    try {
-      const data = await runViaJudge0(JUDGE0_CPP_ID, code, tc.input || "", timeout);
-      const actual = (data.stdout || "").trim();
-      const expected = (tc.output || tc.expected_output || "").trim();
-      const passed = data.status?.id === 3 && actual === expected;
-      results.push({
-        input: tc.input || "", expected,
-        actual: data.status?.id === 3 ? actual : "Runtime Error",
-        passed,
-      });
-    } catch {
-      results.push({
-        input: tc.input || "",
-        expected: (tc.output || tc.expected_output || "").trim(),
-        actual: "Error", passed: false,
-      });
-    }
-  }
-  const passed = results.filter((r) => r.passed).length;
-  return {
-    mode: "judge", total: results.length, passed,
-    results, verdict: passed === results.length ? "ACCEPTED" : "WRONG_ANSWER",
-  };
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
 //  공개 API
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -393,57 +298,29 @@ export async function runPython({
   }
 }
 
-/**
- * C++ 코드 실행
- * @param {Object} params
- * @param {string} params.code - C++ 소스코드
- * @param {string} [params.stdin=""] - 표준 입력 (또는 params.input)
- * @param {string} [params.input=""] - 레거시 stdin 호환
- * @param {string} [params.mode="simple"] - "simple" | "judge"
- * @param {Array}  [params.test_cases=[]] - judge 모드 테스트케이스
- * @param {number} [params.timeout=5000] - 실행 시간 제한 (ms)
- * @returns {Promise<Object>} { output, error, exit_code } 또는 judge 결과
- */
-export async function runCpp({
-  code,
-  stdin = "",
-  input = "",
-  mode = "simple",
-  test_cases = [],
-  timeout = 5000,
-} = {}) {
-  const stdinValue = stdin || input || "";
+// ═════════════════════════════════════════════════════════════════════════════
+//  C++ — 실행 미지원
+// ═════════════════════════════════════════════════════════════════════════════
 
-  // 1순위: Judge0 CE (외부 샌드박스)
-  try {
-    if (mode === "judge" && test_cases && test_cases.length > 0) {
-      return await runCppJudgeViaJudge0(code, test_cases, timeout);
-    }
-    return await runCppSimpleViaJudge0(code, stdinValue, timeout);
-  } catch (judge0Error) {
-    // 2순위: Base44 Functions 폴백 (학생이 Base44 인증이 아닌 Supabase 인증을 사용하면 401 발생 가능)
-    try {
-      const res = await base44.functions.invoke("runCppCode", {
-        code, stdin: stdinValue, input: stdinValue, mode, test_cases,
-      });
-      return res.data || res;
-    } catch (base44Error) {
-      const status = base44Error?.response?.status || base44Error?.status;
-      const isAuthErr = status === 401 || (base44Error?.message || "").includes("401");
-      console.error("[codeRunner] runCpp Base44 fallback 실패:", {
-        httpStatus: status,
-        errorMessage: base44Error?.message,
-        isAuthErr,
-      });
-      return {
-        output: "",
-        error: isAuthErr
-          ? "코드 실행 서버 인증에 실패했습니다. 잠시 후 다시 시도해 주세요."
-          : "코드를 실행할 수 없습니다. 잠시 후 다시 시도해 주세요.",
-        exit_code: 1,
-      };
-    }
-  }
+/**
+ * C++ 코드 실행은 지원하지 않습니다.
+ * 브라우저만으로 C++ 를 컴파일할 수 없고, 외부 실행 서비스도 사용하지 않습니다.
+ * 학생 화면에는 이 사실을 명확히 표시합니다.
+ *
+ * ※ 코드 작성·저장, 예제 코드 비교 확인은 정상 동작합니다.
+ */
+export const CPP_EXECUTION_SUPPORTED = false;
+
+export const CPP_UNSUPPORTED_MESSAGE = "C++ 코드 실행은 이 사이트에서 지원하지 않습니다.";
+
+export async function runCpp() {
+  // 실행을 시도하지 않습니다. 네트워크 요청을 보내지 않습니다.
+  return {
+    output: "",
+    error: CPP_UNSUPPORTED_MESSAGE,
+    exit_code: 1,
+    unsupported: true,
+  };
 }
 
 export default { runPython, runCpp };
