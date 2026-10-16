@@ -5,6 +5,7 @@ import { isAdmin, clearSession, getSessionToken } from "@/lib/auth";
 import { Users, LogOut, Crown, Menu, X, BookOpen } from "lucide-react";
 import NotificationBell from "@/components/common/NotificationBell";
 import PWAInstallBanner from "@/components/common/PWAInstallBanner";
+import { appPath } from "@/lib/basePath";
 
 const baseMenuItems = [
   { path: "/admin/students", label: "학생 관리", icon: Users },
@@ -100,7 +101,7 @@ export default function AdminLayout() {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     clearSession();
-    window.location.href = "/login";
+    window.location.href = appPath("/login");
   };
 
   // 로딩 중
@@ -108,19 +109,19 @@ export default function AdminLayout() {
 
   // 인증되지 않음 → 로그인으로
   if (!user) {
-    window.location.href = "/login";
+    window.location.href = appPath("/login");
     return <LoadingScreen />;
   }
 
   // 관리자 권한 없음 → 학생 페이지로
   if (!isAdmin(user)) {
-    window.location.href = "/student/home";
+    window.location.href = appPath("/student/home");
     return <LoadingScreen />;
   }
 
   // 비밀번호 변경 필요 → 비밀번호 변경 페이지로
   if (user.must_change_password) {
-    window.location.href = "/change-password";
+    window.location.href = appPath("/change-password");
     return <LoadingScreen />;
   }
 

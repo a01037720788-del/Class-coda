@@ -4,10 +4,11 @@ import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
-// GitHub Pages 하위 경로(base) — 배포 시 /저장소이름/ 로 설정합니다.
-const BASE_PATH = process.env.VITE_BASE_PATH || '/';
 // GitHub Pages 빌드에서는 Base44 플러그인을 제외해 Base44 런타임 의존성을 남기지 않습니다.
 const IS_GITHUB_PAGES = process.env.CODA_TARGET === 'github-pages';
+// GitHub Pages 하위 경로(base). GH Pages 빌드의 기본값은 /저장소이름/ 입니다.
+// Base44 환경은 CODA_TARGET 이 없으므로 기존과 동일하게 '/' 를 사용합니다.
+const BASE_PATH = process.env.VITE_BASE_PATH || (IS_GITHUB_PAGES ? '/Class-coda/' : '/');
 
 export default defineConfig({
   base: BASE_PATH,

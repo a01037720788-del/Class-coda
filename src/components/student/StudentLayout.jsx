@@ -8,6 +8,7 @@ import { usePageTracker } from "@/hooks/usePageTracker";
 import NotificationBell from "@/components/common/NotificationBell";
 import PWAInstallBanner from "@/components/common/PWAInstallBanner";
 import { SUBJECT_CONFIGS, resolveActiveSubjects } from "@/utils/subjectAccess";
+import { appPath } from "@/lib/basePath";
 
 // 모바일 하단 고정 표시 과목 우선순위 (최대 4개 + 홈)
 const MOBILE_PRIORITY = ["python", "junior_python", "cpp"];
@@ -31,7 +32,7 @@ export default function StudentLayout() {
 
   const handleLogout = async () => {
     clearSession();
-    window.location.href = "/login";
+    window.location.href = appPath("/login");
   };
 
   const buildMenu = (student, subjectList, enrollments) => {
@@ -146,19 +147,19 @@ export default function StudentLayout() {
 
   // 인증되지 않음 → 로그인으로
   if (!user) {
-    window.location.href = "/login";
+    window.location.href = appPath("/login");
     return <LoadingScreen />;
   }
 
   // 학생 권한 없음 → 관리자 페이지로
   if (!isStudent(user)) {
-    window.location.href = "/admin/students";
+    window.location.href = appPath("/admin/students");
     return <LoadingScreen />;
   }
 
   // 비밀번호 변경 필요 → 비밀번호 변경 페이지로
   if (user.must_change_password) {
-    window.location.href = "/change-password";
+    window.location.href = appPath("/change-password");
     return <LoadingScreen />;
   }
 

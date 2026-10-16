@@ -15,8 +15,10 @@ if (isDev) {
   });
   // fetch 이벤트 리스너 없음 — 모든 요청이 네트워크로 직행
 } else {
-  const CACHE = 'coda-v3';
-  const PRECACHE = ['/', '/index.html'];
+  // 상대 경로는 이 SW 스크립트의 위치를 기준으로 해석됩니다.
+  // 서브패스 배포(/Class-coda/)와 루트 배포(Base44) 모두에서 동일하게 동작합니다.
+  const CACHE = 'coda-v4';
+  const PRECACHE = ['./', './index.html'];
 
   self.addEventListener('install', (e) => {
     e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)));
@@ -56,7 +58,7 @@ if (isDev) {
             caches.open(CACHE).then((c) => c.put(e.request, clone));
             return res;
           })
-          .catch(() => caches.match('/index.html'))
+          .catch(() => caches.match('./index.html'))
       );
       return;
     }

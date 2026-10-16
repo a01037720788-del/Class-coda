@@ -21,6 +21,19 @@
     <title>CODA Practice Judge</title>
 
     <script>
+      // ── GitHub Pages SPA 폴백 복원 ──
+      // 404.html 이 넘겨준 경로(?/student/python)를 원래 URL 로 되돌립니다.
+      // 서브패스 배포에서 새로고침 · 딥링크가 404 없이 동작하게 하는 처리입니다.
+      (function (l) {
+        if (l.search[1] !== '/') return;
+        var decoded = l.search.slice(1).split('&').map(function (s) {
+          return s.replace(/~and~/g, '&');
+        }).join('?');
+        window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+      }(window.location));
+    </script>
+
+    <script>
       // ── PWA 아이콘 + Manifest 동적 생성 ──
       (function () {
         function makeIcon(size) {
@@ -85,8 +98,8 @@
           name: 'CODA Practice Judge',
           short_name: 'CODA',
           description: 'CODA 학원 학습 플랫폼',
-          start_url: '/',
-          scope: '/',
+          start_url: '%BASE_URL%',
+          scope: '%BASE_URL%',
           display: 'standalone',
           background_color: '#7c3aed',
           theme_color: '#7c3aed',
@@ -97,8 +110,8 @@
             { src: icon512 || icon192, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
           ],
           shortcuts: [
-            { name: '대시보드', short_name: '대시보드', url: '/admin/dashboard' },
-            { name: '학생 홈', short_name: '학생 홈', url: '/student/home' }
+            { name: '대시보드', short_name: '대시보드', url: '%BASE_URL%admin/dashboard' },
+            { name: '학생 홈', short_name: '학생 홈', url: '%BASE_URL%student/home' }
           ],
           prefer_related_applications: false
         };

@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
+import { BASE_PATH } from '@/lib/basePath';
 
 // Auth Pages
 import Login from '@/pages/Login';
@@ -39,7 +40,9 @@ function App() {
   return (
     <AuthProvider>
     <QueryClientProvider client={queryClientInstance}>
-      <Router>
+      {/* 배포 환경별 base 경로를 basename 으로 지정
+          — Base44: '/' · GitHub Pages: '/Class-coda' */}
+      <Router basename={BASE_PATH || '/'}>
         <Suspense fallback={<PageLoading />}>
           <Routes>
             {/* 기본 진입 = 로그인 */}

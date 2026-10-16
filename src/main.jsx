@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
+import { appPath } from '@/lib/basePath'
 
 // Service Worker 처리 + React 렌더링
 // dev 모드에서 stale SW가 캐시한 청크로 인해 React 중복 로드 → hooks 에러 방지
@@ -26,7 +27,7 @@ async function initApp() {
       }
     } else {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register(appPath('/sw.js')).catch(() => {});
       });
     }
   }

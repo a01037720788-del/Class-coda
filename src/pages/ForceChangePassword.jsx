@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getSessionToken, getSessionUser, setSessionUser } from "@/lib/auth";
 import { base44 } from "@/api/base44Client";
 import { Lock, Loader2, Code2, Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { appPath } from "@/lib/basePath";
 
 export default function ForceChangePassword() {
   const [oldPassword, setOldPassword] = useState("");
@@ -19,15 +20,15 @@ export default function ForceChangePassword() {
     if (cachedUser) {
       setUser(cachedUser);
     } else if (!token) {
-      window.location.href = "/login";
+      window.location.href = appPath("/login");
     }
   }, []);
 
   const redirectByRole = (role) => {
     if (role === "super_admin" || role === "admin" || role === "teacher") {
-      window.location.href = "/admin/students";
+      window.location.href = appPath("/admin/students");
     } else if (role === "student") {
-      window.location.href = "/student/home";
+      window.location.href = appPath("/student/home");
     }
   };
 

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CODA</title>
+    <script>
+      // ── GitHub Pages SPA 폴백 ──
+      // GitHub Pages 는 SPA 라우트(예: /Class-coda/student/python)에 해당하는 파일이 없으면
+      // 이 404 페이지를 대신 돌려줍니다. 여기서 경로를 쿼리로 옮겨 index.html 을 로드한 뒤,
+      // index.html 에서 원래 경로로 되돌려 React Router 가 처리하게 합니다.
+      // => 새로고침 · 딥링크 · 북마크가 404 없이 동작합니다.
+      (function () {
+        // 저장소 이름(/Class-coda)까지는 유지해야 하는 세그먼트 수.
+        // 루트 도메인에 배포한다면 0 으로 바꿉니다.
+        var pathSegmentsToKeep = 1;
+        var l = window.location;
+        l.replace(
+          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+        );
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

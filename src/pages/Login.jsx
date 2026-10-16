@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Lock, User, Loader2, Code2, Moon, Sun, Eye, EyeOff } from "lucide-react";
 import { setSessionToken, setSessionUser, getSessionToken, clearSessionToken } from "@/lib/auth";
 import { base44 } from "@/api/base44Client";
+import { appPath } from "@/lib/basePath";
 
 export default function Login() {
   const [loginId, setLoginId] = useState("");
@@ -45,13 +46,13 @@ export default function Login() {
 
   const redirectByRole = (role, mustChangePassword = false) => {
     if (mustChangePassword) {
-      window.location.href = "/change-password";
+      window.location.href = appPath("/change-password");
       return;
     }
     if (role === "super_admin" || role === "admin" || role === "teacher") {
-      window.location.href = "/admin/students";
+      window.location.href = appPath("/admin/students");
     } else if (role === "student") {
-      window.location.href = "/student/home";
+      window.location.href = appPath("/student/home");
     }
   };
 
