@@ -1,0 +1,84 @@
+{
+  "name": "COSProblem",
+  "type": "object",
+  "properties": {
+    "unit_id": {
+      "type": "string",
+      "description": "COSUnit ID (\uc5c6\uc73c\uba74 \ubbf8\ubd84\ub958)"
+    },
+    "title": {
+      "type": "string",
+      "description": "\ubb38\uc81c \uc81c\ubaa9"
+    },
+    "description": {
+      "type": "string",
+      "description": "\ubb38\uc81c \uc124\uba85"
+    },
+    "problem_number": {
+      "type": "number",
+      "description": "\ubb38\uc81c \ubc88\ud638"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "Unit \ub0b4 \uc815\ub82c \uc21c\uc11c"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "\uae30\ucd08",
+        "\ucd08\uae09",
+        "\uc911\uae09",
+        "\uace0\uae09"
+      ],
+      "default": "\ucd08\uae09",
+      "description": "\ub09c\uc774\ub3c4"
+    },
+    "category": {
+      "type": "string",
+      "description": "\uc720\ud615 (\uc608: \uc2a4\ud504\ub808\ub4dc\uc2dc\ud2b8, \uc6cc\ub4dc\ud504\ub85c\uc138\uc11c \ub4f1)"
+    },
+    "round": {
+      "type": "string",
+      "description": "\ud68c\ucc28 (\uc608: 2024-1\ud68c)"
+    },
+    "grading_mode": {
+      "type": "string",
+      "enum": [
+        "ai",
+        "structure",
+        "manual"
+      ],
+      "default": "ai",
+      "description": "\ucc44\uc810 \ubc29\uc2dd: ai=AI \ucc44\uc810, structure=\uad6c\uc870 \ube44\uad50 \ucc44\uc810, manual=\uc218\ub3d9 \ucc44\uc810"
+    },
+    "problem_file_url": {
+      "type": "string",
+      "description": "\ud559\uc0dd\uc6a9 \ubb38\uc81c \ud30c\uc77c URL"
+    },
+    "problem_file_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd\uc6a9 \ubb38\uc81c \ud30c\uc77c \uc774\ub984"
+    },
+    "answer_file_url": {
+      "type": "string",
+      "description": "\uc815\ub2f5 \ud30c\uc77c URL"
+    },
+    "answer_file_name": {
+      "type": "string",
+      "description": "\uc815\ub2f5 \ud30c\uc77c \uc774\ub984"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "\ud559\uc0dd \uacf5\uac1c \uc5ec\ubd80"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

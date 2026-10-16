@@ -1,0 +1,27 @@
+{
+  "name": "COSUnit",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "description": {
+      "type": "string",
+      "description": "Unit \uc124\uba85"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "\uc815\ub82c \uc21c\uc11c"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "\ud559\uc0dd \uacf5\uac1c \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

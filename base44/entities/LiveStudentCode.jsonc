@@ -1,0 +1,79 @@
+{
+  "name": "LiveStudentCode",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "LiveSession ID"
+    },
+    "session_code": {
+      "type": "string",
+      "description": "\uc218\uc5c5 \ucf54\ub4dc"
+    },
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "code": {
+      "type": "string",
+      "description": "\ud559\uc0dd \ud604\uc7ac \ucf54\ub4dc"
+    },
+    "language": {
+      "type": "string",
+      "default": "python"
+    },
+    "last_output": {
+      "type": "string",
+      "description": "\ucd5c\uadfc \uc2e4\ud589 \uacb0\uacfc"
+    },
+    "last_run_at": {
+      "type": "string",
+      "description": "\ucd5c\uadfc \uc2e4\ud589 \uc2dc\uac01"
+    },
+    "is_hand_raised": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc190\ub4e4\uae30 \uc5ec\ubd80"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "typing",
+        "running",
+        "done",
+        "error"
+      ],
+      "default": "idle",
+      "description": "\ud559\uc0dd \uc0c1\ud0dc"
+    },
+    "current_page": {
+      "type": "string",
+      "description": "\ud559\uc0dd\uc774 \ud604\uc7ac \ubcf4\uace0 \uc788\ub294 \ud398\uc774\uc9c0 \uacbd\ub85c"
+    },
+    "current_page_label": {
+      "type": "string",
+      "description": "\ud559\uc0dd\uc774 \ud604\uc7ac \ubcf4\uace0 \uc788\ub294 \ud398\uc774\uc9c0 \uc774\ub984 (\ud55c\uae00)"
+    },
+    "page_detail": {
+      "type": "string",
+      "description": "\ud604\uc7ac \ud398\uc774\uc9c0 \uc138\ubd80 \uc815\ubcf4 (\uc608: Unit 3 - \ubcc0\uc218\uc640 \uc790\ub8cc\ud615, \ubb38\uc81c 1001\ubc88)"
+    },
+    "screenshot_data": {
+      "type": "string",
+      "description": "\ud559\uc0dd \ud654\uba74 \uc2a4\ub0c5\uc0f7 (base64 \uc774\ubbf8\uc9c0, \uc120\ud0dd\uc801)"
+    },
+    "screenshot_at": {
+      "type": "string",
+      "description": "\uc2a4\ub0c5\uc0f7 \ucd2c\uc601 \uc2dc\uac01"
+    }
+  },
+  "required": [
+    "session_id",
+    "student_id"
+  ]
+}

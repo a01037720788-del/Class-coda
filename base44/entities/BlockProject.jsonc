@@ -1,0 +1,50 @@
+{
+  "name": "BlockProject",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "\ud504\ub85c\uc81d\ud2b8 \uc774\ub984"
+    },
+    "xml_data": {
+      "type": "string",
+      "description": "Blockly XML \ube14\ub85d \ub370\uc774\ud130"
+    },
+    "generated_js": {
+      "type": "string",
+      "description": "\uc0dd\uc131\ub41c JavaScript \ucf54\ub4dc"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "\uc5f0\uacb0\ub41c EntryUnit ID (\uc120\ud0dd)"
+    },
+    "mission_number": {
+      "type": "number",
+      "description": "\ubbf8\uc158 \ubc88\ud638 (\uc120\ud0dd)"
+    },
+    "is_submitted": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_checked": {
+      "type": "boolean",
+      "default": false
+    },
+    "submit_description": {
+      "type": "string"
+    },
+    "last_saved_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "title"
+  ]
+}

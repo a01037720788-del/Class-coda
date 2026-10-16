@@ -1,0 +1,118 @@
+{
+  "name": "COSSubmission",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "problem_id": {
+      "type": "string",
+      "description": "COSProblem ID"
+    },
+    "problem_title": {
+      "type": "string"
+    },
+    "submitted_file_url": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc81c\ucd9c \ud30c\uc77c URL"
+    },
+    "submitted_file_name": {
+      "type": "string"
+    },
+    "is_correct": {
+      "type": "boolean",
+      "description": "\uc790\ub3d9 \ucc44\uc810 \uc815\ub2f5 \uc5ec\ubd80"
+    },
+    "grading_result": {
+      "type": "object",
+      "description": "\ucc44\uc810 \uacb0\uacfc",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "correct",
+            "incorrect"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "grading_mode": {
+          "type": "string",
+          "description": "ai | structure | manual"
+        },
+        "score": {
+          "type": "number",
+          "description": "\uc810\uc218 (0~100)"
+        },
+        "score_breakdown": {
+          "type": "object",
+          "properties": {
+            "events": {
+              "type": "number"
+            },
+            "motion": {
+              "type": "number"
+            },
+            "loops": {
+              "type": "number"
+            },
+            "variables": {
+              "type": "number"
+            },
+            "goal": {
+              "type": "number"
+            }
+          }
+        },
+        "feedback": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "differences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "\uad6c\uc870 \ube44\uad50 \ucc28\uc774\uc810 \ubaa9\ub85d"
+        },
+        "ignored_differences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "\ubb34\uc2dc\ub41c \ucc28\uc774\uc810 \ubaa9\ub85d"
+        },
+        "pending": {
+          "type": "boolean"
+        },
+        "admin_comment": {
+          "type": "string"
+        },
+        "admin_reviewed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "reviewed_by_admin": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_checked": {
+      "type": "boolean",
+      "default": false
+    },
+    "submitted_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "problem_id"
+  ]
+}

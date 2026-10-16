@@ -1,0 +1,72 @@
+{
+  "name": "LiveSession",
+  "type": "object",
+  "properties": {
+    "session_code": {
+      "type": "string",
+      "description": "\uc218\uc5c5 \uc785\uc7a5 \ucf54\ub4dc (6\uc790\ub9ac)"
+    },
+    "teacher_id": {
+      "type": "string",
+      "description": "\uc120\uc0dd\ub2d8 AppUser ID"
+    },
+    "teacher_name": {
+      "type": "string",
+      "description": "\uc120\uc0dd\ub2d8 \uc774\ub984"
+    },
+    "title": {
+      "type": "string",
+      "description": "\uc218\uc5c5 \uc81c\ubaa9"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "active",
+        "ended"
+      ],
+      "default": "waiting",
+      "description": "\uc218\uc5c5 \uc0c1\ud0dc"
+    },
+    "shared_code": {
+      "type": "string",
+      "description": "\uc120\uc0dd\ub2d8\uc774 \uacf5\uc720 \uc911\uc778 \ucf54\ub4dc"
+    },
+    "shared_language": {
+      "type": "string",
+      "default": "python",
+      "description": "\uacf5\uc720 \ucf54\ub4dc \uc5b8\uc5b4"
+    },
+    "is_locked": {
+      "type": "boolean",
+      "default": false,
+      "description": "\ud559\uc0dd \ud3b8\uc9d1 \uc7a0\uae08 \uc5ec\ubd80"
+    },
+    "announcement": {
+      "type": "string",
+      "description": "\uc120\uc0dd\ub2d8 \uacf5\uc9c0 \uba54\uc2dc\uc9c0"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "student_id": {
+            "type": "string"
+          },
+          "student_name": {
+            "type": "string"
+          },
+          "joined_at": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "\ucc38\uac00 \ud559\uc0dd \ubaa9\ub85d"
+    }
+  },
+  "required": [
+    "session_code",
+    "teacher_id"
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "CalendarNotice",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "\uacf5\uc9c0 \uc81c\ubaa9"
+    },
+    "content": {
+      "type": "string",
+      "description": "\uacf5\uc9c0 \ub0b4\uc6a9"
+    },
+    "notice_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\uacf5\uc9c0 \ub0a0\uc9dc"
+    },
+    "target_type": {
+      "type": "string",
+      "enum": [
+        "\uc804\uccb4",
+        "\uad00\ub9ac\uc790",
+        "\ud559\uc0dd",
+        "\ubd80\ubaa8\ub2d8"
+      ],
+      "default": "\uc804\uccb4",
+      "description": "\ud45c\uc2dc \ub300\uc0c1"
+    },
+    "color": {
+      "type": "string",
+      "default": "blue",
+      "description": "\ud45c\uc2dc \uc0c9\uc0c1"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uacf5\uac1c \uc5ec\ubd80"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "\uc791\uc131\uc790 ID"
+    },
+    "created_by_name": {
+      "type": "string",
+      "description": "\uc791\uc131\uc790 \uc774\ub984"
+    }
+  },
+  "required": [
+    "title",
+    "notice_date"
+  ]
+}

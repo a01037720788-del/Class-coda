@@ -1,0 +1,209 @@
+{
+  "name": "HTMLUnit",
+  "type": "object",
+  "properties": {
+    "unit_number": {
+      "type": "number",
+      "description": "Unit \ubc88\ud638"
+    },
+    "title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Unit \ubd80\uc81c\ubaa9"
+    },
+    "concept_sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "code_example": {
+            "type": "string"
+          },
+          "interactive_code": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "\uac1c\ub150 \uc124\uba85 \uc139\uc158 \ubaa9\ub85d"
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "description": "\ud45c \ubaa9\ub85d"
+    },
+    "description_pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "\uae30\uc874 \uc124\uba85 \ube14\ub85d (\ub808\uac70\uc2dc \u2014 concept_sections \ubbf8\uc874\uc7ac \uc2dc fallback \uc0ac\uc6a9)"
+    },
+    "example_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "css": {
+            "type": "string"
+          },
+          "javascript": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "judge_mode": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "whitespace",
+              "structure"
+            ]
+          }
+        }
+      },
+      "description": "\uc608\uc81c \ucf54\ub4dc \ubaa9\ub85d"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "answer": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Question \ubaa9\ub85d"
+    },
+    "missions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default_html": {
+            "type": "string"
+          },
+          "default_css": {
+            "type": "string"
+          },
+          "default_javascript": {
+            "type": "string"
+          },
+          "preview_image": {
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "html",
+                    "css",
+                    "js"
+                  ]
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "property": {
+                  "type": "string"
+                },
+                "keyword": {
+                  "type": "string"
+                },
+                "min_count": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "Mission \ubaa9\ub85d"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "unit_number",
+    "title"
+  ]
+}

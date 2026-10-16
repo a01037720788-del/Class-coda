@@ -1,0 +1,155 @@
+{
+  "name": "StudentUnitProgress",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "Unit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "current_example_index": {
+      "type": "number",
+      "default": 0,
+      "description": "\ud604\uc7ac \uc5f4\ub824 \uc788\ub294 \uc608\uc81c \ucf54\ub4dc \ubc88\ud638(0-based)"
+    },
+    "completed_example_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": [],
+      "description": "\uc644\ub8cc\ud55c \uc608\uc81c \ucf54\ub4dc \uc778\ub371\uc2a4 \ubaa9\ub85d"
+    },
+    "current_question_index": {
+      "type": "number",
+      "default": 0,
+      "description": "\ud604\uc7ac \uc5f4\ub824 \uc788\ub294 Question \ubc88\ud638(0-based)"
+    },
+    "completed_question_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": [],
+      "description": "\uc644\ub8cc\ud55c Question \ubc88\ud638 \ubaa9\ub85d"
+    },
+    "current_mission_index": {
+      "type": "number",
+      "default": 0,
+      "description": "\ud604\uc7ac \uc5f4\ub824 \uc788\ub294 Mission \ubc88\ud638(0-based)"
+    },
+    "completed_mission_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": [],
+      "description": "\uc644\ub8cc\ud55c Mission \ubc88\ud638 \ubaa9\ub85d"
+    },
+    "example_progress_rate": {
+      "type": "number",
+      "default": 0,
+      "description": "\uc608\uc81c \ucf54\ub4dc \uc9c4\ud589\ub960 (0-100)"
+    },
+    "question_progress_rate": {
+      "type": "number",
+      "default": 0,
+      "description": "Question \uc9c4\ud589\ub960 (0-100)"
+    },
+    "mission_progress_rate": {
+      "type": "number",
+      "default": 0,
+      "description": "Mission \uc9c4\ud589\ub960 (0-100)"
+    },
+    "is_unit_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Unit \uc804\uccb4 \uc644\ub8cc \uc5ec\ubd80"
+    },
+    "last_studied_at": {
+      "type": "string",
+      "description": "\ub9c8\uc9c0\ub9c9 \ud559\uc2b5 \uc2dc\uac04"
+    },
+    "memo": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uba54\ubaa8"
+    },
+    "theme_settings": {
+      "type": "object",
+      "description": "\ud559\uc0dd \ud14c\ub9c8 \uc124\uc815",
+      "properties": {
+        "background_color": {
+          "type": "string"
+        },
+        "card_color": {
+          "type": "string"
+        },
+        "button_color": {
+          "type": "string"
+        },
+        "accent_color": {
+          "type": "string"
+        },
+        "example_code_bg": {
+          "type": "string"
+        },
+        "example_code_text": {
+          "type": "string"
+        },
+        "student_code_bg": {
+          "type": "string"
+        },
+        "student_code_text": {
+          "type": "string"
+        },
+        "result_bg": {
+          "type": "string"
+        },
+        "result_text": {
+          "type": "string"
+        }
+      }
+    },
+    "typing_attempts": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "\ub530\ub77c\uc4f0\uae30 \uc2dc\ub3c4 \uae30\ub85d(legacy)"
+    },
+    "question_answers": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Question \ub2f5\ubcc0(legacy)"
+    },
+    "mission_submissions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Mission \uc81c\ucd9c \uae30\ub85d(legacy)"
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc644\ub8cc \uc5ec\ubd80(legacy)"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id"
+  ]
+}

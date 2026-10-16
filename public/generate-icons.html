@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<script>
+// This file generates icon PNGs via canvas and downloads them.
+// Open in browser, right-click canvases to save, place in /public/icons/
+function makeIcon(size, filename) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#7c3aed');
+  grad.addColorStop(1, '#5b21b6');
+  ctx.fillStyle = grad;
+  const r = size * 0.2;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Text "C"
+  ctx.fillStyle = 'white';
+  ctx.font = `bold ${size * 0.52}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('C', size / 2, size / 2 + size * 0.03);
+
+  canvas.toBlob((blob) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  }, 'image/png');
+}
+
+window.onload = () => {
+  setTimeout(() => makeIcon(192, 'icon-192.png'), 100);
+  setTimeout(() => makeIcon(512, 'icon-512.png'), 600);
+  setTimeout(() => makeIcon(152, 'icon-152.png'), 1100);
+  setTimeout(() => makeIcon(144, 'icon-144.png'), 1600);
+};
+</script>
+<p>아이콘 파일 자동 다운로드 중... /public/icons/ 폴더에 넣어주세요.</p>
+</body>
+</html>

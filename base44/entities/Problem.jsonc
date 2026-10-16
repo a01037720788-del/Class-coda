@@ -1,0 +1,86 @@
+{
+  "name": "Problem",
+  "type": "object",
+  "properties": {
+    "problem_number": {
+      "type": "number",
+      "description": "\ubb38\uc81c \ubc88\ud638"
+    },
+    "title": {
+      "type": "string",
+      "description": "\ubb38\uc81c \uc81c\ubaa9"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "Bronze",
+        "Silver",
+        "Gold",
+        "Platinum"
+      ],
+      "description": "\ub09c\uc774\ub3c4"
+    },
+    "algorithm_type": {
+      "type": "string",
+      "description": "\uc54c\uace0\ub9ac\uc998 \uc720\ud615"
+    },
+    "description": {
+      "type": "string",
+      "description": "\ubb38\uc81c \uc124\uba85"
+    },
+    "input_description": {
+      "type": "string",
+      "description": "\uc785\ub825 \uc124\uba85"
+    },
+    "output_description": {
+      "type": "string",
+      "description": "\ucd9c\ub825 \uc124\uba85"
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\uc81c\ud55c \uc870\uac74 \ubaa9\ub85d"
+    },
+    "sample_input": {
+      "type": "string",
+      "description": "\uc608\uc81c \uc785\ub825"
+    },
+    "sample_output": {
+      "type": "string",
+      "description": "\uc608\uc81c \ucd9c\ub825"
+    },
+    "test_cases": {
+      "type": "string",
+      "description": "\ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 (JSON)"
+    },
+    "answer_code": {
+      "type": "string",
+      "description": "\uc815\ub2f5 \ucf54\ub4dc"
+    },
+    "answer_language": {
+      "type": "string",
+      "default": "python",
+      "description": "\uc815\ub2f5 \ucf54\ub4dc \uc5b8\uc5b4"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    },
+    "subject_id": {
+      "type": "string",
+      "description": "\uacfc\ubaa9 ID"
+    },
+    "subject_name": {
+      "type": "string",
+      "default": "\uc54c\uace0\ub9ac\uc998",
+      "description": "\uacfc\ubaa9\uba85"
+    }
+  },
+  "required": [
+    "problem_number",
+    "title"
+  ]
+}

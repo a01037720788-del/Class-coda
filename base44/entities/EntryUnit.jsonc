@@ -1,0 +1,70 @@
+{
+  "name": "EntryUnit",
+  "type": "object",
+  "properties": {
+    "unit_number": {
+      "type": "number",
+      "description": "Unit \ubc88\ud638"
+    },
+    "title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "description": {
+      "type": "string",
+      "description": "Unit \uc124\uba85"
+    },
+    "example_image_url": {
+      "type": "string",
+      "description": "\uc608\uc81c \uc774\ubbf8\uc9c0 URL"
+    },
+    "entry_project_url": {
+      "type": "string",
+      "description": "\uc5d4\ud2b8\ub9ac \uc791\ud488 \ub9c1\ud06c"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "\ub530\ub77c\ud558\uae30 \ub2e8\uacc4"
+    },
+    "missions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Mission \ubaa9\ub85d"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "unit_number",
+    "title"
+  ]
+}

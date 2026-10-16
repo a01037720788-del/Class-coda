@@ -1,0 +1,97 @@
+{
+  "name": "LessonFeedback",
+  "type": "object",
+  "properties": {
+    "schedule_id": {
+      "type": "string",
+      "description": "\uc218\uc5c5 \uc77c\uc815 ID"
+    },
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "subject_id": {
+      "type": "string",
+      "description": "\uacfc\ubaa9 ID"
+    },
+    "subject_name": {
+      "type": "string",
+      "description": "\uacfc\ubaa9\uba85"
+    },
+    "teacher_id": {
+      "type": "string",
+      "description": "\ub2f4\ub2f9 \uc120\uc0dd\ub2d8 ID"
+    },
+    "teacher_name": {
+      "type": "string",
+      "description": "\ub2f4\ub2f9 \uc120\uc0dd\ub2d8 \uc774\ub984"
+    },
+    "class_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\uc218\uc5c5 \ub0a0\uc9dc"
+    },
+    "lesson_number": {
+      "type": "number",
+      "description": "\ucc28\uc2dc"
+    },
+    "attendance_status": {
+      "type": "string",
+      "enum": [
+        "\ucd9c\uc11d",
+        "\uacb0\uc11d",
+        "\uc9c0\uac01",
+        "\ubcf4\uac15 \uc608\uc815",
+        "\ucde8\uc18c"
+      ],
+      "default": "\ucd9c\uc11d",
+      "description": "\ucd9c\uc11d \uc0c1\ud0dc"
+    },
+    "learned_content": {
+      "type": "string",
+      "description": "\uc624\ub298 \ubc30\uc6b4 \ub0b4\uc6a9"
+    },
+    "attitude": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc218\uc5c5 \ud0dc\ub3c4"
+    },
+    "difficult_part": {
+      "type": "string",
+      "description": "\uc5b4\ub824\uc6cc\ud55c \ubd80\ubd84"
+    },
+    "homework": {
+      "type": "string",
+      "description": "\uc219\uc81c"
+    },
+    "next_plan": {
+      "type": "string",
+      "description": "\ub2e4\uc74c \uc218\uc5c5 \uacc4\ud68d"
+    },
+    "parent_memo": {
+      "type": "string",
+      "description": "\ud559\ubd80\ubaa8 \uc804\ub2ec \uba54\ubaa8"
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc644\ub8cc \uc5ec\ubd80"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc0ad\uc81c \uc5ec\ubd80 (\uc218\uc5c5\uc5d0\uc11c \ud559\uc0dd \uc81c\uac70 \uc2dc)"
+    },
+    "deleted_at": {
+      "type": "string",
+      "description": "\uc0ad\uc81c \uc2dc\uac01"
+    }
+  },
+  "required": [
+    "student_id",
+    "class_date"
+  ]
+}

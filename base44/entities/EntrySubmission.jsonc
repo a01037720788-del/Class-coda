@@ -1,0 +1,53 @@
+{
+  "name": "EntrySubmission",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "unit_id": {
+      "type": "string"
+    },
+    "unit_title": {
+      "type": "string"
+    },
+    "mission_number": {
+      "type": "number"
+    },
+    "mission_title": {
+      "type": "string"
+    },
+    "project_url": {
+      "type": "string",
+      "description": "\uc5d4\ud2b8\ub9ac \uc791\ud488 \ub9c1\ud06c (\uc120\ud0dd)"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "\uc5c5\ub85c\ub4dc\ub41c \ud30c\uc77c URL (\uc120\ud0dd)"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "\uc5c5\ub85c\ub4dc\ub41c \ud30c\uc77c \uc6d0\ubcf8 \uc774\ub984"
+    },
+    "description": {
+      "type": "string",
+      "description": "\uc81c\ucd9c \uc124\uba85"
+    },
+    "is_checked": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uad00\ub9ac\uc790 \ud655\uc778 \uc5ec\ubd80"
+    },
+    "submitted_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id",
+    "mission_number"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "name": "ClassScheduleStudent",
+  "type": "object",
+  "properties": {
+    "schedule_id": {
+      "type": "string",
+      "description": "ClassSchedule ID"
+    },
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "attendance_status": {
+      "type": "string",
+      "enum": [
+        "\ucd9c\uc11d",
+        "\uacb0\uc11d",
+        "\uc9c0\uac01",
+        "\ubcf4\uac15 \uc608\uc815",
+        "\ucde8\uc18c",
+        "\ubbf8\uc815"
+      ],
+      "default": "\ubbf8\uc815",
+      "description": "\ucd9c\uc11d \uc0c1\ud0dc"
+    },
+    "feedback_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "\ud53c\ub4dc\ubc31 \uc644\ub8cc \uc5ec\ubd80"
+    },
+    "lesson_count_applied": {
+      "type": "boolean",
+      "default": false,
+      "description": "\ucc28\uc2dc \ucc28\uac10 \uc801\uc6a9 \uc5ec\ubd80"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc218\uc5c5\uc5d0\uc11c \ud559\uc0dd \uc81c\uac70 \uc5ec\ubd80"
+    },
+    "deleted_at": {
+      "type": "string",
+      "description": "\uc0ad\uc81c \uc2dc\uac01"
+    }
+  },
+  "required": [
+    "schedule_id",
+    "student_id"
+  ]
+}

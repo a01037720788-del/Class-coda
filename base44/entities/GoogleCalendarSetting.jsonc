@@ -1,0 +1,17 @@
+{
+  "name": "GoogleCalendarSetting",
+  "type": "object",
+  "properties": {
+    "calendar_id": {
+      "type": "string",
+      "description": "\uc120\ud0dd\ub41c Google Calendar ID"
+    },
+    "calendar_title": {
+      "type": "string",
+      "description": "\uc120\ud0dd\ub41c Google Calendar \uc81c\ubaa9"
+    }
+  },
+  "required": [
+    "calendar_id"
+  ]
+}

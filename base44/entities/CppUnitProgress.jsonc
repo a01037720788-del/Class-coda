@@ -1,0 +1,78 @@
+{
+  "name": "CppUnitProgress",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "CppUnit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "current_example_index": {
+      "type": "number",
+      "default": 0
+    },
+    "completed_example_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "current_question_index": {
+      "type": "number",
+      "default": 0
+    },
+    "completed_question_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "current_mission_index": {
+      "type": "number",
+      "default": 0
+    },
+    "completed_mission_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "example_progress_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "question_progress_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "mission_progress_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "is_unit_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_studied_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id"
+  ]
+}

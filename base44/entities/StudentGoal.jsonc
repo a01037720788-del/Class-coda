@@ -1,0 +1,52 @@
+{
+  "name": "StudentGoal",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "goal_type": {
+      "type": "string",
+      "enum": [
+        "problem_count",
+        "bronze_rank",
+        "unit_complete",
+        "custom"
+      ],
+      "description": "\ubaa9\ud45c \uc720\ud615"
+    },
+    "title": {
+      "type": "string",
+      "description": "\ubaa9\ud45c \uc81c\ubaa9"
+    },
+    "target_value": {
+      "type": "number",
+      "description": "\ubaa9\ud45c \uc218\uce58"
+    },
+    "current_value": {
+      "type": "number",
+      "default": 0,
+      "description": "\ud604\uc7ac \ub2ec\uc131 \uc218\uce58"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "\ubaa9\ud45c \uae30\ud55c"
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "\ub2ec\uc131 \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "student_id",
+    "title",
+    "goal_type"
+  ]
+}

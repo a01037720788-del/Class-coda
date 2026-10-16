@@ -1,0 +1,49 @@
+{
+  "name": "Subject",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "\uacfc\ubaa9\uba85"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "algorithm",
+        "algorithm_learning",
+        "python",
+        "junior_python",
+        "cpp",
+        "java",
+        "html",
+        "entry",
+        "block",
+        "cos",
+        "other"
+      ],
+      "default": "other",
+      "description": "\uacfc\ubaa9 \uc720\ud615 (\uad00\ub9ac \ucef4\ud3ec\ub10c\ud2b8 \ub77c\uc6b0\ud305\uc6a9)"
+    },
+    "description": {
+      "type": "string",
+      "description": "\uacfc\ubaa9 \uc124\uba85"
+    },
+    "color": {
+      "type": "string",
+      "description": "\uce98\ub9b0\ub354 \uc0c9\uc0c1"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc0ad\uc81c \uc5ec\ubd80 (true\uba74 \ubaa9\ub85d\uc5d0\uc11c \uc228\uae40, \uc790\ub3d9 \uc7ac\uc0dd\uc131 \ubc29\uc9c0)"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

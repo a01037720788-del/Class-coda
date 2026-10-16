@@ -1,0 +1,49 @@
+{
+  "name": "UnitQuestionResult",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "Unit ID"
+    },
+    "question_number": {
+      "type": "number",
+      "description": "\ubb38\uc81c \ubc88\ud638"
+    },
+    "question_type": {
+      "type": "string",
+      "description": "\ubb38\uc81c \uc720\ud615"
+    },
+    "answer": {
+      "type": "string",
+      "description": "\ud559\uc0dd \ub2f5\ubcc0"
+    },
+    "is_correct": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc815\ub2f5 \uc5ec\ubd80"
+    },
+    "attempt_count": {
+      "type": "number",
+      "default": 1,
+      "description": "\uc2dc\ub3c4 \ud69f\uc218"
+    },
+    "answered_at": {
+      "type": "string",
+      "description": "\ub2f5\ubcc0 \uc2dc\uac04"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id",
+    "question_number"
+  ]
+}

@@ -1,0 +1,287 @@
+{
+  "name": "CppUnit",
+  "type": "object",
+  "properties": {
+    "unit_number": {
+      "type": "number",
+      "description": "Unit \ubc88\ud638"
+    },
+    "title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Unit \ubd80\uc81c\ubaa9"
+    },
+    "learning_objectives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\ud559\uc2b5 \ubaa9\ud45c (3~5\uac1c)"
+    },
+    "concept_sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "code_example": {
+            "type": "string"
+          },
+          "interactive_code": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "\uac1c\ub150 \uc124\uba85 \uc139\uc158 \ubaa9\ub85d"
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "description": "\ud45c \ubaa9\ub85d"
+    },
+    "example_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "\uc644\uc131 \ucf54\ub4dc (legacy \u2014 reference_code\uac00 \uc788\uc73c\uba74 \uc6b0\uc120 \uc0ac\uc6a9)"
+          },
+          "reference_code": {
+            "type": "string",
+            "description": "\uc644\uc131 \ucf54\ub4dc (\ud559\uc0dd\uc774 \ub530\ub77c\uc4f8 \ucc38\uace0 \ucf54\ub4dc \u2014 \uc77d\uae30 \uc804\uc6a9)"
+          },
+          "starter_code": {
+            "type": "string",
+            "description": "\uc2dc\uc791 \ucf54\ub4dc (\ud559\uc0dd \uc5d0\ub514\ud130 \ucd08\uae30\uac12, \uc120\ud0dd)"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "uses_input": {
+            "type": "boolean",
+            "default": false,
+            "description": "cin \uc785\ub825 \uc0ac\uc6a9 \uc5ec\ubd80"
+          },
+          "default_stdin": {
+            "type": "string",
+            "description": "\uae30\ubcf8 \uc785\ub825\uac12"
+          },
+          "stdin_description": {
+            "type": "string",
+            "description": "\uc785\ub825\uac12 \uc124\uba85"
+          }
+        }
+      },
+      "description": "\uc608\uc81c \ucf54\ub4dc \ud30c\uc77c \ubaa9\ub85d"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "answer": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "left": {
+                  "type": "string"
+                },
+                "right": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "code_block": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "code_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "expected_output": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Question \ubaa9\ub85d"
+    },
+    "missions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default_code": {
+            "type": "string"
+          },
+          "answer_code": {
+            "type": "string",
+            "description": "\uad00\ub9ac\uc790 \uc804\uc6a9 Mission \uc815\ub2f5 \ucf54\ub4dc"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "input_condition": {
+            "type": "string"
+          },
+          "output_condition": {
+            "type": "string"
+          },
+          "example": {
+            "type": "string"
+          },
+          "uses_input": {
+            "type": "boolean",
+            "default": false,
+            "description": "cin \uc785\ub825 \uc0ac\uc6a9 \uc5ec\ubd80"
+          },
+          "default_stdin": {
+            "type": "string",
+            "description": "\uae30\ubcf8 \uc785\ub825\uac12"
+          },
+          "stdin_description": {
+            "type": "string",
+            "description": "\uc785\ub825\uac12 \uc124\uba85"
+          },
+          "grading_mode": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "normalize",
+              "exclude_prompts"
+            ],
+            "default": "normalize",
+            "description": "\ucc44\uc810 \ubaa8\ub4dc"
+          },
+          "test_cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "type": "string"
+                },
+                "expected_output": {
+                  "type": "string"
+                },
+                "output": {
+                  "type": "string"
+                },
+                "hidden": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            },
+            "description": "\uc790\ub3d9 \ucc44\uc810\uc6a9 \ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \ubaa9\ub85d"
+          }
+        }
+      },
+      "description": "Mission \ubaa9\ub85d"
+    },
+    "summary": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\ud575\uc2ec \uc694\uc57d (3~5\uac1c)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "unit_number",
+    "title"
+  ]
+}

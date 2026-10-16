@@ -1,0 +1,581 @@
+{
+  "name": "AlgorithmUnit",
+  "type": "object",
+  "properties": {
+    "unit_number": {
+      "type": "number",
+      "description": "Unit \ubc88\ud638"
+    },
+    "title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9 (\uc54c\uace0\ub9ac\uc998 \uc774\ub984)"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Unit \ubd80\uc81c\ubaa9"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "\uc785\ubb38",
+        "\uae30\ucd08",
+        "\uc911\uae09",
+        "\uc2ec\ud654",
+        "\ub300\ud68c"
+      ],
+      "default": "\uae30\ucd08",
+      "description": "\ub09c\uc774\ub3c4"
+    },
+    "algorithm_tag": {
+      "type": "string",
+      "enum": [
+        "\ud0d0\uc0c9",
+        "\uc815\ub82c",
+        "\uc790\ub8cc\uad6c\uc870",
+        "DFS/BFS",
+        "\uadf8\ub9ac\ub514",
+        "\ub204\uc801\ud569",
+        "\ud22c\ud3ec\uc778\ud130",
+        "\uc7ac\uadc0",
+        "\ubd84\ud560\uc815\ubcf5",
+        "DP",
+        "\uadf8\ub798\ud504",
+        "\uae30\ud0c0"
+      ],
+      "default": "\uae30\ud0c0",
+      "description": "\uc54c\uace0\ub9ac\uc998 \ubd84\ub958 \ud0dc\uadf8"
+    },
+    "learning_objectives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\ud559\uc2b5 \ubaa9\ud45c (3~5\uac1c)"
+    },
+    "concept_sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "code_example": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "1. \uac1c\ub150 \uc124\uba85 \uc139\uc158"
+    },
+    "why_needed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "2. \uc65c \uc774 \uc54c\uace0\ub9ac\uc998\uc774 \ud544\uc694\ud55c\uc9c0"
+    },
+    "core_idea": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "3. \ud575\uc2ec \uc544\uc774\ub514\uc5b4"
+    },
+    "algorithm_flow": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "4. \uc54c\uace0\ub9ac\uc998 \ud750\ub984 (\ub2e8\uacc4\ubcc4)"
+    },
+    "simulator": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "algorithm_type": {
+          "type": "string",
+          "enum": [
+            "linear_search",
+            "binary_search",
+            "selection_sort",
+            "insertion_sort",
+            "bubble_sort",
+            "dfs",
+            "bfs",
+            "stack",
+            "queue",
+            "two_pointer",
+            "prefix_sum",
+            "greedy"
+          ]
+        },
+        "array_data": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "\ucd08\uae30 \ubc30\uc5f4 \uac12"
+        },
+        "target": {
+          "type": "number",
+          "description": "\ucc3e\uc744 \uac12 (\ud0d0\uc0c9\uc6a9)"
+        },
+        "start_index": {
+          "type": "number",
+          "description": "\uc2dc\uc791 \uc704\uce58"
+        },
+        "graph_nodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "\uadf8\ub798\ud504 \ub178\ub4dc"
+        },
+        "graph_edges": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "\uadf8\ub798\ud504 \uac04\uc120 [[a,b], ...]"
+        },
+        "start_node": {
+          "type": "string",
+          "description": "\uc2dc\uc791 \ub178\ub4dc (DFS/BFS)"
+        },
+        "description": {
+          "type": "string",
+          "description": "\uc2dc\ubbac\ub808\uc774\ud130 \uc124\uba85 \ubb38\uad6c"
+        },
+        "auto_speed": {
+          "type": "number",
+          "default": 1000,
+          "description": "\uc790\ub3d9 \uc2e4\ud589 \uc18d\ub3c4 (ms)"
+        },
+        "step_descriptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "\ub2e8\uacc4\ubcc4 \uc124\uba85"
+        }
+      },
+      "description": "5. \uc54c\uace0\ub9ac\uc998 \uc2dc\ubbac\ub808\uc774\ud130 \uc124\uc815"
+    },
+    "example_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "uses_input": {
+            "type": "boolean",
+            "default": false
+          },
+          "default_stdin": {
+            "type": "string"
+          },
+          "stdin_description": {
+            "type": "string"
+          },
+          "code_explanations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "string",
+                  "description": "\ucf54\ub4dc \ub77c\uc778"
+                },
+                "explanation": {
+                  "type": "string",
+                  "description": "\uc124\uba85"
+                }
+              }
+            },
+            "description": "6. \ucf54\ub4dc \ub77c\uc778\ubcc4 \uc124\uba85"
+          }
+        }
+      },
+      "description": "\uc608\uc81c \ucf54\ub4dc \ubaa9\ub85d"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "description": "\uac1d\uad00\uc2dd/OX/\ube48\uce78/\uc9dd\ub9de\ucd94\uae30/\uc8fc\uad00\uc2dd/\uacb0\uacfc\uc608\uce21/\uc54c\uace0\ub9ac\uc998\ub2e8\uacc4"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "answer": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "left": {
+                  "type": "string"
+                },
+                "right": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "code_block": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "7. Question \ubaa9\ub85d"
+    },
+    "code_blanks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "full_code": {
+            "type": "string",
+            "description": "\uc804\uccb4 \ucf54\ub4dc (\ube48\uce78\uc740 ____________ \ub85c \ud45c\uc2dc)"
+          },
+          "blank_answer": {
+            "type": "string",
+            "description": "\uc815\ub2f5"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "8. \ucf54\ub4dc \ube48\uce78 \ucc44\uc6b0\uae30 \ubb38\uc81c"
+    },
+    "implementations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default_code": {
+            "type": "string",
+            "description": "\ud559\uc0dd\uc5d0\uac8c \uc81c\uacf5\ud560 \uc2dc\uc791 \ucf54\ub4dc"
+          },
+          "answer_code": {
+            "type": "string",
+            "description": "\uad00\ub9ac\uc790\uc6a9 \uc815\ub2f5 \ucf54\ub4dc"
+          },
+          "test_cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "type": "string"
+                },
+                "expected_output": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "grading_mode": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "normalize"
+            ],
+            "default": "normalize"
+          }
+        }
+      },
+      "description": "9. \uc9c1\uc811 \uad6c\ud604 \ubb38\uc81c"
+    },
+    "judge_problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "\ubb38\uc81c \uace0\uc720 ID (UUID)"
+          },
+          "number": {
+            "type": "number",
+            "description": "\ubb38\uc81c \ubc88\ud638"
+          },
+          "title": {
+            "type": "string",
+            "description": "\ubb38\uc81c \uc81c\ubaa9"
+          },
+          "description": {
+            "type": "string",
+            "description": "\ubb38\uc81c \uc124\uba85"
+          },
+          "input_desc": {
+            "type": "string",
+            "description": "\uc785\ub825 \uc124\uba85"
+          },
+          "output_desc": {
+            "type": "string",
+            "description": "\ucd9c\ub825 \uc124\uba85"
+          },
+          "constraints": {
+            "type": "string",
+            "description": "\uc81c\ud55c \uc870\uac74"
+          },
+          "sample_input": {
+            "type": "string",
+            "description": "\uc608\uc81c \uc785\ub825"
+          },
+          "sample_output": {
+            "type": "string",
+            "description": "\uc608\uc81c \ucd9c\ub825"
+          },
+          "default_code": {
+            "type": "string",
+            "description": "\ud559\uc0dd \uc2dc\uc791 \ucf54\ub4dc"
+          },
+          "answer_code": {
+            "type": "string",
+            "description": "\uc815\ub2f5 \ucf54\ub4dc (\uad00\ub9ac\uc790\uc6a9, \ud559\uc0dd\uc5d0\uac8c \ube44\uacf5\uac1c)"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "\ud558",
+              "\uc911",
+              "\uc0c1"
+            ],
+            "default": "\ud558",
+            "description": "\ub09c\uc774\ub3c4"
+          },
+          "time_limit": {
+            "type": "number",
+            "default": 2,
+            "description": "\uc2dc\uac04 \uc81c\ud55c (\ucd08)"
+          },
+          "memory_limit": {
+            "type": "number",
+            "default": 256,
+            "description": "\uba54\ubaa8\ub9ac \uc81c\ud55c (MB)"
+          },
+          "test_cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "\ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \uace0\uc720 ID"
+                },
+                "input": {
+                  "type": "string",
+                  "description": "\uc785\ub825\uac12"
+                },
+                "expected_output": {
+                  "type": "string",
+                  "description": "\uae30\ub300 \ucd9c\ub825"
+                },
+                "hidden": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "\uc228\uae40 \uc5ec\ubd80"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "\uc124\uba85 (\uc120\ud0dd)"
+                }
+              }
+            },
+            "description": "\ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \ubaa9\ub85d"
+          },
+          "is_published": {
+            "type": "boolean",
+            "default": true,
+            "description": "\ud559\uc0dd\uc5d0\uac8c \uacf5\uac1c \uc5ec\ubd80"
+          },
+          "grading_mode": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "normalize"
+            ],
+            "default": "normalize",
+            "description": "\ucd9c\ub825 \ube44\uad50 \ubc29\uc2dd"
+          },
+          "stop_on_first_fail": {
+            "type": "boolean",
+            "default": false,
+            "description": "\uccab \uc2e4\ud328 \uc2dc \uc911\ub2e8 \uc5ec\ubd80"
+          },
+          "order": {
+            "type": "number",
+            "default": 0,
+            "description": "\uc815\ub82c \uc21c\uc11c"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ]
+      },
+      "description": "11. \uc54c\uace0\ub9ac\uc998 \ubb38\uc81c \ud480\uc774 (\uc628\ub77c\uc778 \uc800\uc9c0)"
+    },
+    "missions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default_code": {
+            "type": "string"
+          },
+          "answer_code": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "input_condition": {
+            "type": "string"
+          },
+          "output_condition": {
+            "type": "string"
+          },
+          "example": {
+            "type": "string"
+          },
+          "uses_input": {
+            "type": "boolean",
+            "default": false
+          },
+          "default_stdin": {
+            "type": "string"
+          },
+          "stdin_description": {
+            "type": "string"
+          },
+          "grading_mode": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "normalize",
+              "exclude_prompts"
+            ],
+            "default": "normalize"
+          },
+          "test_cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "type": "string"
+                },
+                "expected_output": {
+                  "type": "string"
+                },
+                "hidden": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "10. Mission \ubaa9\ub85d"
+    },
+    "summary": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\ud575\uc2ec \uc694\uc57d (3~5\uac1c)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "unit_number",
+    "title"
+  ]
+}

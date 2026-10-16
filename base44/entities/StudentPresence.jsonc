@@ -1,0 +1,33 @@
+{
+  "name": "StudentPresence",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "current_page": {
+      "type": "string",
+      "description": "\ud604\uc7ac \ud398\uc774\uc9c0 \uacbd\ub85c"
+    },
+    "current_page_label": {
+      "type": "string",
+      "description": "\ud604\uc7ac \ud398\uc774\uc9c0 \ud55c\uae00 \uc774\ub984"
+    },
+    "page_detail": {
+      "type": "string",
+      "description": "\uc138\ubd80 \uc815\ubcf4 (\uc608: Unit 3, \ubb38\uc81c 1001\ubc88)"
+    },
+    "last_seen_at": {
+      "type": "string",
+      "description": "\ub9c8\uc9c0\ub9c9 \ud65c\ub3d9 \uc2dc\uac01 (ISO string)"
+    }
+  },
+  "required": [
+    "student_id"
+  ]
+}

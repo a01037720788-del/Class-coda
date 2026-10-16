@@ -1,0 +1,64 @@
+{
+  "name": "UnitExamplePractice",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "Unit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "unit_type": {
+      "type": "string",
+      "description": "Unit \uc720\ud615 (python, junior_python \ub4f1)"
+    },
+    "example_index": {
+      "type": "number",
+      "description": "\uc608\uc81c \ucf54\ub4dc \uc778\ub371\uc2a4"
+    },
+    "filename": {
+      "type": "string",
+      "description": "\ud30c\uc77c\uba85"
+    },
+    "typed_code": {
+      "type": "string",
+      "description": "\ud559\uc0dd\uc774 \uc791\uc131\ud55c \ucf54\ub4dc"
+    },
+    "stdin": {
+      "type": "string",
+      "description": "\ud559\uc0dd\uc774 \uc785\ub825\ud55c \ud45c\uc900 \uc785\ub825\uac12"
+    },
+    "execution_result": {
+      "type": "string",
+      "description": "\uc2e4\ud589 \uacb0\uacfc"
+    },
+    "expected_output": {
+      "type": "string",
+      "description": "\uc608\uc0c1 \ucd9c\ub825 \uacb0\uacfc"
+    },
+    "is_matched": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc608\uc0c1 \uacb0\uacfc \uc77c\uce58 \uc5ec\ubd80"
+    },
+    "tried_at": {
+      "type": "string",
+      "description": "\uc2dc\ub3c4 \uc2dc\uac04"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id",
+    "example_index"
+  ]
+}

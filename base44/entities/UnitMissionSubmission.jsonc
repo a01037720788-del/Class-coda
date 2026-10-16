@@ -1,0 +1,95 @@
+{
+  "name": "UnitMissionSubmission",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "Unit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "unit_type": {
+      "type": "string",
+      "description": "Unit \uc720\ud615 (python, junior_python \ub4f1)"
+    },
+    "mission_number": {
+      "type": "number",
+      "description": "Mission \ubc88\ud638"
+    },
+    "mission_description": {
+      "type": "string",
+      "description": "Mission \uc124\uba85"
+    },
+    "submitted_code": {
+      "type": "string",
+      "description": "\uc81c\ucd9c \ucf54\ub4dc"
+    },
+    "submitted_stdin": {
+      "type": "string",
+      "description": "\ud559\uc0dd\uc774 \uc785\ub825\ud55c \ud45c\uc900 \uc785\ub825\uac12"
+    },
+    "execution_result": {
+      "type": "string",
+      "description": "\uc2e4\ud589 \uacb0\uacfc"
+    },
+    "expected_output": {
+      "type": "string",
+      "description": "\uc608\uc0c1 \ucd9c\ub825"
+    },
+    "is_correct": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc815\ub2f5 \uc5ec\ubd80"
+    },
+    "grading_mode": {
+      "type": "string",
+      "enum": [
+        "exact",
+        "normalize",
+        "exclude_prompts"
+      ],
+      "default": "normalize",
+      "description": "\ucc44\uc810 \ubaa8\ub4dc"
+    },
+    "test_case_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "actual_output": {
+            "type": "string"
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "description": "\ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4\ubcc4 \ucc44\uc810 \uacb0\uacfc"
+    },
+    "submitted_at": {
+      "type": "string",
+      "description": "\uc81c\ucd9c \uc2dc\uac04"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id",
+    "mission_number"
+  ]
+}

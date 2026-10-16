@@ -1,0 +1,56 @@
+{
+  "name": "CppMissionSubmission",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "Unit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "mission_number": {
+      "type": "number",
+      "description": "Mission \ubc88\ud638"
+    },
+    "mission_description": {
+      "type": "string",
+      "description": "Mission \uc124\uba85"
+    },
+    "submitted_code": {
+      "type": "string",
+      "description": "\uc81c\ucd9c \ucf54\ub4dc"
+    },
+    "execution_result": {
+      "type": "string",
+      "description": "\uc2e4\ud589 \uacb0\uacfc"
+    },
+    "expected_output": {
+      "type": "string",
+      "description": "\uc608\uc0c1 \ucd9c\ub825"
+    },
+    "is_correct": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc815\ub2f5 \uc5ec\ubd80"
+    },
+    "submitted_at": {
+      "type": "string",
+      "description": "\uc81c\ucd9c \uc2dc\uac04"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id",
+    "mission_number"
+  ]
+}

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- PWA 기본 메타 -->
+    <meta name="theme-color" content="#7c3aed" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CODA" />
+    <meta name="msapplication-TileColor" content="#7c3aed" />
+
+    <!-- SEO -->
+    <meta name="description" content="CODA 학원 학습 플랫폼" />
+    <meta property="og:title" content="CODA Practice Judge" />
+    <meta property="og:description" content="CODA 학원 학습 플랫폼" />
+    <meta property="og:type" content="website" />
+
+    <title>CODA Practice Judge</title>
+
+    <script>
+      // ── PWA 아이콘 + Manifest 동적 생성 ──
+      (function () {
+        function makeIcon(size) {
+          try {
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            const ctx = c.getContext('2d');
+            // 배경 그라디언트
+            const g = ctx.createLinearGradient(0, 0, size, size);
+            g.addColorStop(0, '#7c3aed');
+            g.addColorStop(1, '#5b21b6');
+            ctx.fillStyle = g;
+            // 둥근 모서리
+            const r = size * 0.22;
+            ctx.beginPath();
+            ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
+            ctx.quadraticCurveTo(size, 0, size, r);
+            ctx.lineTo(size, size - r);
+            ctx.quadraticCurveTo(size, size, size - r, size);
+            ctx.lineTo(r, size);
+            ctx.quadraticCurveTo(0, size, 0, size - r);
+            ctx.lineTo(0, r);
+            ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath();
+            ctx.fill();
+            // 'C' 텍스트
+            ctx.fillStyle = 'white';
+            ctx.font = '900 ' + Math.floor(size * 0.52) + 'px -apple-system,BlinkMacSystemFont,sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('C', size / 2, size / 2 + size * 0.02);
+            return c.toDataURL('image/png');
+          } catch (e) { return null; }
+        }
+
+        const icon192 = makeIcon(192);
+        const icon512 = makeIcon(512);
+
+        if (!icon192) return;
+
+        // apple-touch-icon 설정
+        const appleLink = document.createElement('link');
+        appleLink.rel = 'apple-touch-icon';
+        appleLink.href = icon192;
+        document.head.appendChild(appleLink);
+
+        // favicon 설정
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.type = 'image/png';
+        favicon.href = icon192;
+        document.head.appendChild(favicon);
+
+        // sessionStorage에 저장 (React 컴포넌트에서 사용)
+        try {
+          sessionStorage.setItem('pwa-icon-192', icon192);
+          sessionStorage.setItem('pwa-icon-512', icon512 || icon192);
+        } catch (e) {}
+
+        // manifest.json 동적 주입 (Blob URL)
+        const manifest = {
+          name: 'CODA Practice Judge',
+          short_name: 'CODA',
+          description: 'CODA 학원 학습 플랫폼',
+          start_url: '/',
+          scope: '/',
+          display: 'standalone',
+          background_color: '#7c3aed',
+          theme_color: '#7c3aed',
+          orientation: 'portrait-primary',
+          lang: 'ko',
+          icons: [
+            { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: icon512 || icon192, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+          ],
+          shortcuts: [
+            { name: '대시보드', short_name: '대시보드', url: '/admin/dashboard' },
+            { name: '학생 홈', short_name: '학생 홈', url: '/student/home' }
+          ],
+          prefer_related_applications: false
+        };
+
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestURL = URL.createObjectURL(blob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+      })();
+    </script>
+
+    <style>
+      /* Safe area (노치/홈바) */
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+      /* iOS pull-to-refresh 방지 */
+      html { overscroll-behavior: none; }
+
+      /* 스플래시 화면 */
+      #splash {
+        position: fixed; inset: 0; z-index: 9999;
+        background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        transition: opacity 0.5s ease;
+      }
+      #splash.hide { opacity: 0; pointer-events: none; }
+      #splash-logo {
+        width: 88px; height: 88px;
+        background: white; border-radius: 24px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 40px; font-weight: 900; color: #7c3aed;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        margin-bottom: 20px;
+        letter-spacing: -1px;
+      }
+      #splash-title {
+        color: white; font-size: 22px; font-weight: 800;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        letter-spacing: -0.5px;
+      }
+      #splash-sub {
+        color: rgba(255,255,255,0.65); font-size: 13px; margin-top: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      #splash-dots {
+        display: flex; gap: 6px; margin-top: 40px;
+      }
+      #splash-dots span {
+        width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.4);
+        animation: dot-pulse 1.2s ease-in-out infinite;
+      }
+      #splash-dots span:nth-child(2) { animation-delay: 0.2s; }
+      #splash-dots span:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes dot-pulse {
+        0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
+        40% { transform: scale(1.4); opacity: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 스플래시 화면 -->
+    <div id="splash">
+      <div id="splash-logo">C</div>
+      <div id="splash-title">CODA Practice Judge</div>
+      <div id="splash-sub">학원 학습 플랫폼</div>
+      <div id="splash-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // 스플래시 숨기기 (React 앱 로드 후)
+      window.addEventListener('load', function () {
+        setTimeout(function () {
+          var splash = document.getElementById('splash');
+          if (splash) {
+            splash.classList.add('hide');
+            setTimeout(function () { splash.remove(); }, 500);
+          }
+        }, 1400);
+      });
+    </script>
+  </body>
+</html>

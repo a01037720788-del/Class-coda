@@ -1,0 +1,77 @@
+{
+  "name": "Enrollment",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "subject_id": {
+      "type": "string",
+      "description": "\uacfc\ubaa9 ID"
+    },
+    "subject_name": {
+      "type": "string",
+      "description": "\uacfc\ubaa9\uba85"
+    },
+    "teacher_id": {
+      "type": "string",
+      "description": "\ub2f4\ub2f9 \uc120\uc0dd\ub2d8 ID"
+    },
+    "teacher_name": {
+      "type": "string",
+      "description": "\ub2f4\ub2f9 \uc120\uc0dd\ub2d8 \uc774\ub984"
+    },
+    "paid_lessons": {
+      "type": "number",
+      "default": 0,
+      "description": "\uacb0\uc81c \ucc28\uc2dc"
+    },
+    "completed_lessons": {
+      "type": "number",
+      "default": 0,
+      "description": "\uc218\uc5c5\ud55c \ud69f\uc218"
+    },
+    "remaining_lessons": {
+      "type": "number",
+      "default": 0,
+      "description": "\ub0a8\uc740 \ucc28\uc2dc (\uc790\ub3d9 \uacc4\uc0b0)"
+    },
+    "repayment_needed": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc7ac\uacb0\uc81c \ud544\uc694 \uc5ec\ubd80"
+    },
+    "last_class_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\ub9c8\uc9c0\ub9c9 \uc218\uc5c5\uc77c"
+    }
+  },
+  "required": [
+    "student_id",
+    "subject_name"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

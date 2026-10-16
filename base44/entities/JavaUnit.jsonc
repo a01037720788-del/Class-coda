@@ -1,0 +1,331 @@
+{
+  "name": "JavaUnit",
+  "type": "object",
+  "properties": {
+    "unit_number": {
+      "type": "number",
+      "description": "Unit \ubc88\ud638"
+    },
+    "title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Unit \ubd80\uc81c\ubaa9"
+    },
+    "learning_objectives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\ud559\uc2b5 \ubaa9\ud45c (3~5\uac1c)"
+    },
+    "concept_sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "code_example": {
+            "type": "string"
+          },
+          "interactive_code": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "\uac1c\ub150 \uc124\uba85 \uc139\uc158 \ubaa9\ub85d"
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "description": "\ud45c \ubaa9\ub85d"
+    },
+    "example_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "uses_input": {
+            "type": "boolean",
+            "default": false,
+            "description": "Scanner \uc785\ub825 \uc0ac\uc6a9 \uc5ec\ubd80"
+          },
+          "default_stdin": {
+            "type": "string",
+            "description": "\uae30\ubcf8 \uc785\ub825\uac12"
+          },
+          "stdin_description": {
+            "type": "string",
+            "description": "\uc785\ub825\uac12 \uc124\uba85"
+          }
+        }
+      },
+      "description": "\uc608\uc81c \ucf54\ub4dc \ud30c\uc77c \ubaa9\ub85d"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "answer": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "left": {
+                  "type": "string"
+                },
+                "right": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "code_block": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "code_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "expected_output": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Question \ubaa9\ub85d"
+    },
+    "missions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default_code": {
+            "type": "string"
+          },
+          "answer_code": {
+            "type": "string",
+            "description": "\uad00\ub9ac\uc790 \uc804\uc6a9 Mission \uc815\ub2f5 \ucf54\ub4dc"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "input_condition": {
+            "type": "string"
+          },
+          "output_condition": {
+            "type": "string"
+          },
+          "example": {
+            "type": "string"
+          },
+          "uses_input": {
+            "type": "boolean",
+            "default": false,
+            "description": "Scanner \uc785\ub825 \uc0ac\uc6a9 \uc5ec\ubd80"
+          },
+          "default_stdin": {
+            "type": "string",
+            "description": "\uae30\ubcf8 \uc785\ub825\uac12"
+          },
+          "stdin_description": {
+            "type": "string",
+            "description": "\uc785\ub825\uac12 \uc124\uba85"
+          },
+          "grading_mode": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "normalize",
+              "exclude_prompts"
+            ],
+            "default": "normalize",
+            "description": "\ucc44\uc810 \ubaa8\ub4dc"
+          },
+          "random_test_enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "\ub79c\ub364 \ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \uc790\ub3d9 \uc0dd\uc131 \uc0ac\uc6a9 \uc5ec\ubd80"
+          },
+          "random_test_count": {
+            "type": "number",
+            "default": 10,
+            "description": "\ub79c\ub364 \ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \uc0dd\uc131 \uac1c\uc218"
+          },
+          "random_input_specs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "data_type": {
+                  "type": "string",
+                  "enum": [
+                    "integer",
+                    "float",
+                    "string",
+                    "choice"
+                  ]
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                },
+                "min_length": {
+                  "type": "number"
+                },
+                "max_length": {
+                  "type": "number"
+                },
+                "choices": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "\ub79c\ub364 \uc785\ub825\uac12 \uc0dd\uc131 \uaddc\uce59 \ubaa9\ub85d"
+          },
+          "test_cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "type": "string",
+                  "description": "\ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \uc785\ub825\uac12"
+                },
+                "expected_output": {
+                  "type": "string",
+                  "description": "\uae30\ub300 \ucd9c\ub825"
+                },
+                "output": {
+                  "type": "string",
+                  "description": "\uae30\ub300 \ucd9c\ub825 (\ubcc4\uce6d)"
+                },
+                "hidden": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "\uc228\uae40 \uc5ec\ubd80"
+                }
+              }
+            },
+            "description": "\uc790\ub3d9 \ucc44\uc810\uc6a9 \ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \ubaa9\ub85d"
+          }
+        }
+      },
+      "description": "Mission \ubaa9\ub85d"
+    },
+    "summary": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\ud575\uc2ec \uc694\uc57d (3~5\uac1c)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "unit_number",
+    "title"
+  ]
+}

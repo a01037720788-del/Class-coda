@@ -1,0 +1,64 @@
+{
+  "name": "StudentSubmission",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "login_id": {
+      "type": "string",
+      "description": "\ub85c\uadf8\uc778 \uc544\uc774\ub514"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "Unit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "unit_type": {
+      "type": "string",
+      "description": "Unit \uc720\ud615 (python, junior_python, cpp, algorithm_learning \ub4f1)"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "example",
+        "question",
+        "mission",
+        "implementation",
+        "judge"
+      ],
+      "description": "\uc81c\ucd9c \uc720\ud615"
+    },
+    "item_number": {
+      "type": "number",
+      "description": "\ud56d\ubaa9 \ubc88\ud638 (example index, question number, mission number \ub4f1)"
+    },
+    "data": {
+      "type": "object",
+      "description": "\uc81c\ucd9c \ub370\uc774\ud130 (\ucf54\ub4dc, \uc2e4\ud589\uacb0\uacfc, \ub2f5\ubcc0 \ub4f1 \u2014 JSONB \uad6c\uc870)"
+    },
+    "is_correct": {
+      "type": "boolean",
+      "default": false,
+      "description": "\uc815\ub2f5 \uc5ec\ubd80"
+    },
+    "submitted_at": {
+      "type": "string",
+      "description": "\uc81c\ucd9c \uc2dc\uac04 (ISO 8601)"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id",
+    "item_type",
+    "item_number"
+  ]
+}

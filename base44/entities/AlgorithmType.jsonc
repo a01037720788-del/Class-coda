@@ -1,0 +1,32 @@
+{
+  "name": "AlgorithmType",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "\uc720\ud615 \uc774\ub984"
+    },
+    "description": {
+      "type": "string",
+      "description": "\uc124\uba85"
+    },
+    "problem_count": {
+      "type": "number",
+      "default": 0,
+      "description": "\ubb38\uc81c \uc218"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "\uc815\ub82c \uc21c\uc11c"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

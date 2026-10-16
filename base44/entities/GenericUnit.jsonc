@@ -1,0 +1,203 @@
+{
+  "name": "GenericUnit",
+  "type": "object",
+  "properties": {
+    "subject_type": {
+      "type": "string",
+      "enum": [
+        "algorithm",
+        "python",
+        "cpp",
+        "html",
+        "entry",
+        "block",
+        "cos",
+        "other"
+      ],
+      "default": "other",
+      "description": "\uacfc\ubaa9 \uc720\ud615"
+    },
+    "subject_id": {
+      "type": "string",
+      "description": "\uacfc\ubaa9 ID (Subject \uc5d4\ud2f0\ud2f0 \ucc38\uc870)"
+    },
+    "unit_number": {
+      "type": "number",
+      "description": "Unit \ubc88\ud638"
+    },
+    "title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Unit \ubd80\uc81c\ubaa9"
+    },
+    "concept_sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "code_example": {
+            "type": "string"
+          },
+          "interactive_code": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "\uac1c\ub150 \uc124\uba85 \uc139\uc158 \ubaa9\ub85d"
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "description": "\ud45c \ubaa9\ub85d"
+    },
+    "example_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "\uc608\uc81c \ucf54\ub4dc \ubaa9\ub85d"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "answer": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "code_block": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "code_items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Question \ubaa9\ub85d"
+    },
+    "missions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default_code": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          },
+          "input_condition": {
+            "type": "string"
+          },
+          "output_condition": {
+            "type": "string"
+          },
+          "example": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Mission \ubaa9\ub85d"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "unit_number",
+    "title",
+    "subject_type"
+  ]
+}

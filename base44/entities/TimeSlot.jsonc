@@ -1,0 +1,37 @@
+{
+  "name": "TimeSlot",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "\uc2dc\uac04\ub300 \uc774\ub984 (\uc608: 5\uc2dc 1\uc2dc\uac04 \uc218\uc5c5)"
+    },
+    "start_time": {
+      "type": "string",
+      "description": "\uc2dc\uc791 \uc2dc\uac04 (HH:mm)"
+    },
+    "duration_type": {
+      "type": "string",
+      "enum": [
+        "1hour",
+        "2hour"
+      ],
+      "default": "1hour",
+      "description": "\uc218\uc5c5 \uc2dc\uac04"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "\uc815\ub82c \uc21c\uc11c"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "\uc0ac\uc6a9 \uc5ec\ubd80"
+    }
+  },
+  "required": [
+    "start_time",
+    "duration_type"
+  ]
+}

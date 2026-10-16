@@ -1,0 +1,114 @@
+{
+  "name": "AlgorithmJudgeSubmission",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "AlgorithmUnit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "problem_id": {
+      "type": "string",
+      "description": "\ubb38\uc81c \uace0\uc720 ID"
+    },
+    "problem_number": {
+      "type": "number",
+      "description": "\ubb38\uc81c \ubc88\ud638"
+    },
+    "problem_title": {
+      "type": "string",
+      "description": "\ubb38\uc81c \uc81c\ubaa9"
+    },
+    "submitted_code": {
+      "type": "string",
+      "description": "\uc81c\ucd9c\ud55c \ucf54\ub4dc"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "AC",
+        "WA",
+        "RE",
+        "TLE",
+        "CE",
+        "OLE"
+      ],
+      "description": "\ucc44\uc810 \uacb0\uacfc (\uc815\ub2f5/\ud2c0\ub9bc/\uc2e4\ud589\uc624\ub958/\uc2dc\uac04\ucd08\uacfc/\ucef4\ud30c\uc77c\uc624\ub958/\ucd9c\ub825\ucd08\uacfc)"
+    },
+    "passed_count": {
+      "type": "number",
+      "default": 0,
+      "description": "\ud1b5\uacfc\ud55c \ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \uc218"
+    },
+    "total_count": {
+      "type": "number",
+      "default": 0,
+      "description": "\uc804\uccb4 \ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4 \uc218"
+    },
+    "execution_time_ms": {
+      "type": "number",
+      "default": 0,
+      "description": "\ucd1d \uc2e4\ud589 \uc2dc\uac04 (ms)"
+    },
+    "test_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "number"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "description": "AC/WA/RE/TLE"
+          },
+          "is_hidden": {
+            "type": "boolean"
+          },
+          "input": {
+            "type": "string",
+            "description": "\uacf5\uac1c \ud14c\uc2a4\ud2b8\ub9cc \ud3ec\ud568"
+          },
+          "expected_output": {
+            "type": "string",
+            "description": "\uacf5\uac1c \ud14c\uc2a4\ud2b8\ub9cc \ud3ec\ud568"
+          },
+          "actual_output": {
+            "type": "string",
+            "description": "\uacf5\uac1c \ud14c\uc2a4\ud2b8\ub9cc \ud3ec\ud568"
+          },
+          "error": {
+            "type": "string"
+          },
+          "time_ms": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "\ud14c\uc2a4\ud2b8\ucf00\uc774\uc2a4\ubcc4 \uacb0\uacfc (hidden\uc740 \ub370\uc774\ud130 \uc5c6\uc774 \uacb0\uacfc\ub9cc)"
+    },
+    "submitted_at": {
+      "type": "string",
+      "description": "\uc81c\ucd9c \uc2dc\uac04"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id",
+    "problem_id"
+  ]
+}

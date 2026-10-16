@@ -1,0 +1,76 @@
+{
+  "name": "HTMLUnitProgress",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "\ud559\uc0dd ID"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "\ud559\uc0dd \uc774\ub984"
+    },
+    "unit_id": {
+      "type": "string",
+      "description": "HTMLUnit ID"
+    },
+    "unit_title": {
+      "type": "string",
+      "description": "Unit \uc81c\ubaa9"
+    },
+    "current_step": {
+      "type": "string",
+      "enum": [
+        "description",
+        "example",
+        "question",
+        "mission"
+      ],
+      "default": "description"
+    },
+    "completed_example_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "completed_question_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "completed_mission_ids": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "example_progress_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "question_progress_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "mission_progress_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "is_unit_completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_studied_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "unit_id"
+  ]
+}

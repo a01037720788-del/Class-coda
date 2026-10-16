@@ -1,0 +1,36 @@
+{
+  "name": "UnitTeacherNote",
+  "type": "object",
+  "properties": {
+    "unit_id": {
+      "type": "string",
+      "description": "Unit ID"
+    },
+    "unit_type": {
+      "type": "string",
+      "description": "Unit \uc720\ud615 (python, junior_python, cpp, java, html, algorithm_learning, entry, block, other)"
+    },
+    "subject_name": {
+      "type": "string",
+      "description": "\uacfc\ubaa9\uba85"
+    },
+    "notes": {
+      "type": "string",
+      "description": "\uc218\uc5c5 \uc124\uba85 \uba54\ubaa8 (\uad00\ub9ac\uc790 \uc804\uc6a9)"
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "\uc218\uc815\uc790 \uc774\ub984"
+    }
+  },
+  "required": [
+    "unit_id",
+    "unit_type"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}
