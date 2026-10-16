@@ -18,7 +18,10 @@
  *      → 생성된 /exec URL 을 사이트의 VITE_SHEETS_API_URL 에 넣습니다.
  *
  *  [보안 원칙]
- *   - 비밀번호는 평문으로 저장하지 않습니다 (salt + 반복 HMAC-SHA256).
+ *   - 비밀번호는 평문으로 저장하지 않습니다 (학생별 랜덤 솔트 + 반복 HMAC-SHA256).
+ *   - 비밀번호 정책은 "최소 4자리" 만 검사합니다. 문자 종류 조합(대소문자/숫자/
+ *     특수문자)을 강제하지 않아 초등학생도 쉽게 로그인할 수 있습니다.
+ *     초기 비밀번호는 관리자가 시트의 "CODA 관리" 메뉴에서 학생별로 설정합니다.
  *   - 세션 토큰 원문은 서버에 저장하지 않습니다 (SHA-256 해시만 저장).
  *   - student_id 는 항상 "토큰 → 서버 조회"로 결정합니다.
  *     클라이언트가 보낸 student_id 는 신뢰하지 않습니다.
@@ -40,7 +43,8 @@ var SHEET_ATTEMPTS = '_LoginAttempts';
 // ── 정책 값 ──────────────────────────────────────────────────────────────────
 var ALLOWED_SUBJECTS = ['python', 'junior_python', 'cpp'];
 var SESSION_TTL_SECONDS = 12 * 60 * 60; // 세션 12시간
-var PBKDF2_ITERATIONS = 2000;           // 비밀번호 해시 반복 횟수
+var HASH_ITERATIONS = 2000;             // 비밀번호 해시 반복 횟수
+var MIN_PASSWORD_LENGTH = 4;            // 비밀번호 최소 길이 (복잡도 조건 없음)
 var MAX_LOGIN_ATTEMPTS = 5;             // 로그인 실패 허용 횟수
 var LOCKOUT_SECONDS = 15 * 60;          // 초과 시 잠금 시간
 var MAX_STRING_FIELD = 200000;          // 제출 코드 등 저장 최대 길이
@@ -407,9 +411,24 @@ function clearFailures_(loginId) {
 }
 
 /* ==========================================================================
- *  비밀번호 해시 (Apps Script 에는 bcrypt/PBKDF2 라이브러리가 없어
- *  salt + 반복 HMAC-SHA256 으로 구현합니다. 강도 한계는 README 참고)
+ *  비밀번호 정책 · 해시
+ *  (Apps Script 에는 bcrypt/PBKDF2 라이브러리가 없어
+ *   salt + 반복 HMAC-SHA256 으로 구현합니다. 강도 한계는 README 참고)
  * ========================================================================== */
+
+/**
+ * 비밀번호 정책 검사 — "최소 길이" 만 봅니다.
+ * 초등학생이 4자리 숫자만으로도 쓸 수 있게 하기 위해
+ * 문자 종류(영문 대소문자/숫자/특수문자) 조합은 요구하지 않습니다.
+ * @returns {string|null} 문제가 있으면 안내 문구, 정상이면 null
+ */
+function checkPasswordPolicy_(password) {
+  var pw = String(password || '');
+  if (pw.length < MIN_PASSWORD_LENGTH) {
+    return '비밀번호는 ' + MIN_PASSWORD_LENGTH + '자 이상이어야 합니다.';
+  }
+  return null;
+}
 
 function makeSalt_() {
   return (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
@@ -418,7 +437,7 @@ function makeSalt_() {
 function hashPassword_(password, salt) {
   var bytes = Utilities.newBlob(String(password) + ':' + String(salt)).getBytes();
   var key = Utilities.computeHmacSha256Signature(bytes, String(salt));
-  for (var i = 1; i < PBKDF2_ITERATIONS; i++) {
+  for (var i = 1; i < HASH_ITERATIONS; i++) {
     key = Utilities.computeHmacSha256Signature(key, bytes);
   }
   return bytesToHex_(key);
@@ -632,7 +651,8 @@ function setupSpreadsheet() {
 
 function adminAddStudent() {
   var ui = SpreadsheetApp.getUi();
-  var res = ui.prompt('학생 추가', '이름,로그인아이디,비밀번호,학교,학년,과목(python,cpp)\n형식으로 입력하세요. 학교/학년은 비워도 됩니다.',
+  var res = ui.prompt('학생 추가',
+    '이름,로그인아이디,비밀번호,학교,학년,과목(python,cpp)\n형식으로 입력하세요. 학교/학년은 비워도 됩니다.\n비밀번호는 ' + MIN_PASSWORD_LENGTH + '자 이상이면 되고, 숫자만 써도 됩니다.',
     ui.ButtonSet.OK_CANCEL);
   if (res.getSelectedButton() !== ui.Button.OK) return;
   var parts = res.getResponseText().split(',');
@@ -646,6 +666,8 @@ function adminAddStudent() {
   var subjects = normalizeSubjectInput_(parts[5] || '');
 
   if (!name || !loginId || !password) return ui.alert('이름, 아이디, 비밀번호는 필수입니다.');
+  var policyError = checkPasswordPolicy_(password);
+  if (policyError) return ui.alert(policyError);
   if (findByLoginId_(loginId)) return ui.alert('이미 사용 중인 아이디입니다: ' + loginId);
   if (!subjects) return ui.alert('과목은 python, junior_python, cpp 중 하나 이상이어야 합니다.');
 
@@ -686,10 +708,13 @@ function adminResetPassword() {
   var row = findRowIndexByStudentId_(id.getResponseText().trim());
   if (row < 0) return ui.alert('해당 student_id 를 찾을 수 없습니다.');
 
-  var pw = ui.prompt('비밀번호 재설정', '새 비밀번호를 입력하세요.', ui.ButtonSet.OK_CANCEL);
+  var pw = ui.prompt('비밀번호 재설정',
+    '새 비밀번호를 입력하세요. (' + MIN_PASSWORD_LENGTH + '자 이상, 숫자만 써도 됩니다)',
+    ui.ButtonSet.OK_CANCEL);
   if (pw.getSelectedButton() !== ui.Button.OK) return;
   var newPassword = pw.getResponseText().trim();
-  if (newPassword.length < 4) return ui.alert('비밀번호는 4자 이상이어야 합니다.');
+  var policyError = checkPasswordPolicy_(newPassword);
+  if (policyError) return ui.alert(policyError);
 
   var salt = makeSalt_();
   updateStudentField_(row, 'password_salt', salt);
