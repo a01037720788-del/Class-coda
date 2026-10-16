@@ -17,6 +17,7 @@ import SubjectGuard from '@/components/student/SubjectGuard';
 
 // Admin Pages (lazy) — 학생 관리 전용
 const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
+const AdminSubjects = lazy(() => import('@/pages/admin/AdminSubjects'));
 
 // Student Pages (lazy) — Python / 저학년 Python / C++ 3과목
 const StudentHome = lazy(() => import('@/pages/student/StudentHome'));
@@ -50,6 +51,7 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Navigate to="/admin/students" replace />} />
               <Route path="students" element={<AdminStudents />} />
+              <Route path="subjects" element={<AdminSubjects />} />
               <Route path="*" element={<Navigate to="/admin/students" replace />} />
             </Route>
 

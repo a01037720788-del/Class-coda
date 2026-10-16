@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useSessionAuth } from "@/hooks/useSessionAuth";
 import { isAdmin, clearSession, getSessionToken } from "@/lib/auth";
-import { Users, LogOut, Crown, Menu, X } from "lucide-react";
+import { Users, LogOut, Crown, Menu, X, BookOpen } from "lucide-react";
 import NotificationBell from "@/components/common/NotificationBell";
 import PWAInstallBanner from "@/components/common/PWAInstallBanner";
 
 const baseMenuItems = [
   { path: "/admin/students", label: "학생 관리", icon: Users },
+  { path: "/admin/subjects", label: "과목 관리", icon: BookOpen },
 ];
 
 function SidebarContent({ user, menuItems, roleBadge, onLogout, onClose, showBell }) {
