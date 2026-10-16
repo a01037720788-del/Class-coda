@@ -43,7 +43,12 @@ var SHEET_ATTEMPTS = '_LoginAttempts';
 // ── 정책 값 ──────────────────────────────────────────────────────────────────
 var ALLOWED_SUBJECTS = ['python', 'junior_python', 'cpp'];
 var SESSION_TTL_SECONDS = 12 * 60 * 60; // 세션 12시간
-var HASH_ITERATIONS = 2000;             // 비밀번호 해시 반복 횟수
+
+// 비밀번호 해시: PBKDF2-HMAC-SHA256 (RFC 8018) — Crypto.gs 의 순수 JS 구현을 사용합니다.
+// password_algorithm 열이 비어 있으면 아래 반복 횟수를 기본값으로 사용합니다.
+var PBKDF2_ALGORITHM = 'PBKDF2-HMAC-SHA256';
+var PBKDF2_ITERATIONS = 310000;         // 새 비밀번호에 사용하는 반복 횟수 (= 시트의 password_algorithm 값)
+var HASH_ITERATIONS = 2000;             // (레거시) 반복 HMAC-SHA256 계정용 반복 횟수
 var MIN_PASSWORD_LENGTH = 4;            // 비밀번호 최소 길이 (복잡도 조건 없음)
 var MAX_LOGIN_ATTEMPTS = 5;             // 로그인 실패 허용 횟수
 var LOCKOUT_SECONDS = 15 * 60;          // 초과 시 잠금 시간
@@ -51,7 +56,7 @@ var MAX_STRING_FIELD = 200000;          // 제출 코드 등 저장 최대 길�
 
 // ── 헤더 정의 (setupSpreadsheet 가 이 순서로 생성) ───────────────────────────
 var HEADERS = {
-  Students: ['student_id', 'name', 'login_id', 'password_hash', 'password_salt',
+  Students: ['student_id', 'name', 'login_id', 'password_hash', 'password_salt', 'password_algorithm',
              'school', 'grade', 'subjects', 'status'],
   StudentProgress: ['student_id', 'subject', 'unit_id', 'completed', 'last_accessed', 'data'],
   QuizResults: ['student_id', 'subject', 'unit_id', 'score', 'submitted_at', 'item_number', 'answer', 'data'],
@@ -162,9 +167,9 @@ function handleLogin_(p) {
   if (String(student.status || '').toLowerCase() !== 'active') {
     return fail_('inactive', '비활성화된 계정입니다. 관리자에게 문의해 주세요.');
   }
-  if (!verifyPassword_(password, student.password_hash, student.password_salt)) {
-    return genericFail();
-  }
+  var verdict = verifyPassword_(password, student);
+  if (verdict.error) return fail_(verdict.error, verdict.message);
+  if (!verdict.ok) return genericFail();
 
   clearFailures_(loginId);
   var session = createSession_(String(student.student_id));
@@ -412,8 +417,12 @@ function clearFailures_(loginId) {
 
 /* ==========================================================================
  *  비밀번호 정책 · 해시
- *  (Apps Script 에는 bcrypt/PBKDF2 라이브러리가 없어
- *   salt + 반복 HMAC-SHA256 으로 구현합니다. 강도 한계는 README 참고)
+ *
+ *  저장 형식: password_salt(hex/base64) · password_hash · password_algorithm
+ *             password_algorithm 예) PBKDF2-HMAC-SHA256:310000
+ *  검증은 서버(Apps Script)에서만 수행하며, 해시와 솔트는 브라우저로 내려보내지 않습니다.
+ *  Apps Script 에 PBKDF2/bcrypt 라이브러리가 없어 Crypto.gs 에 직접 구현했습니다.
+ *  이전에 만들어진 반복 HMAC-SHA256:<n> 계정도 함께 지원합니다.
  * ========================================================================== */
 
 /**
@@ -434,19 +443,113 @@ function makeSalt_() {
   return (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
 }
 
-function hashPassword_(password, salt) {
+/** 새 비밀번호용 해시(솔트 + 알고리즘 포함)를 만듭니다. */
+function newPasswordHash_(password) {
+  var salt = makeSalt_();
+  return {
+    password_salt: salt,
+    password_hash: codaPbkdf2Hex_(password, decodeSaltBytes_(salt), PBKDF2_ITERATIONS, 32),
+    password_algorithm: PBKDF2_ALGORITHM + ':' + PBKDF2_ITERATIONS
+  };
+}
+
+/** (레거시) 반복 HMAC-SHA256 — 이전에 만들어진 계정 검증용 */
+function legacyHashPassword_(password, salt, iterations) {
   var bytes = Utilities.newBlob(String(password) + ':' + String(salt)).getBytes();
   var key = Utilities.computeHmacSha256Signature(bytes, String(salt));
-  for (var i = 1; i < HASH_ITERATIONS; i++) {
+  var rounds = Number(iterations) > 0 ? Number(iterations) : HASH_ITERATIONS;
+  for (var i = 1; i < rounds; i++) {
     key = Utilities.computeHmacSha256Signature(key, bytes);
   }
   return bytesToHex_(key);
 }
 
-function verifyPassword_(password, storedHash, salt) {
-  if (!storedHash || !salt) return false;
-  var computed = hashPassword_(password, salt);
-  return timingSafeEqual_(computed, String(storedHash));
+/**
+ * Students 행의 비밀번호 정보로 검증합니다.
+ * @returns {{ok: boolean, error: (string|undefined), message: (string|undefined)}}
+ */
+function verifyPassword_(password, student) {
+  var stored = String(student.password_hash || '').trim();
+  var saltRaw = String(student.password_salt || '').trim();
+  if (!stored || !saltRaw) return { ok: false };
+
+  var alg = parsePasswordAlgorithm_(student.password_algorithm);
+
+  if (alg.type === PBKDF2_ALGORITHM) {
+    if (typeof codaPbkdf2Hex_ !== 'function') {
+      return {
+        ok: false, error: 'setup_incomplete',
+        message: '서버 설정이 완료되지 않았습니다. 관리자에게 문의해 주세요.'
+      };
+    }
+    var saltBytes = decodeSaltBytes_(saltRaw);
+    if (!saltBytes.length) {
+      return {
+        ok: false, error: 'unsupported_hash',
+        message: '비밀번호 정보 형식을 읽을 수 없습니다. 관리자에게 문의해 주세요.'
+      };
+    }
+    var computed = codaPbkdf2Hex_(password, saltBytes, alg.iterations, 32);
+    return { ok: timingSafeEqual_(computed, normalizeHashHex_(stored)) };
+  }
+
+  if (alg.type === 'HMAC-SHA256') {
+    var legacy = legacyHashPassword_(password, saltRaw, alg.iterations);
+    return { ok: timingSafeEqual_(legacy, normalizeHashHex_(stored)) };
+  }
+
+  // 알 수 없는 알고리즘은 통과시키지 않습니다 (fail-closed)
+  return {
+    ok: false, error: 'unsupported_hash',
+    message: '지원하지 않는 비밀번호 형식입니다. 관리자에게 문의해 주세요.'
+  };
+}
+
+/**
+ * password_algorithm 열을 해석합니다.
+ *  "PBKDF2-HMAC-SHA256:310000" → PBKDF2 310000회
+ *  "HMAC-SHA256:2000"          → 레거시 방식
+ *  비어 있으면 PBKDF2-HMAC-SHA256 기본 반복 횟수로 간주합니다.
+ */
+function parsePasswordAlgorithm_(value) {
+  var raw = String(value || '').trim().toUpperCase();
+  var m = /^([A-Z0-9-]+)\s*:\s*(\d+)$/.exec(raw);
+  if (!m) return { type: PBKDF2_ALGORITHM, iterations: PBKDF2_ITERATIONS };
+  var type = m[1] === 'PBKDF2-HMAC-SHA256' ? PBKDF2_ALGORITHM : m[1];
+  return { type: type, iterations: parseInt(m[2], 10) || PBKDF2_ITERATIONS };
+}
+
+/** 솔트 문자열(hex / base64 / 문자열)을 바이트 배열로 바꿉니다. */
+function decodeSaltBytes_(raw) {
+  var s = String(raw || '').trim();
+  if (!s) return [];
+  var hex = codaCryptoHexToBytes_(s);
+  if (hex.length) return hex;
+  try {
+    var b64 = Utilities.base64Decode(s);
+    if (b64 && b64.length) {
+      var out = [];
+      for (var i = 0; i < b64.length; i++) out.push(b64[i] & 255);
+      return out;
+    }
+  } catch (err) { /* base64 아님 */ }
+  return Utilities.newBlob(s).getBytes();   // 마지막 대안: 문자열을 UTF-8 바이트로 사용
+}
+
+/** 저장된 해시를 비교용 16진 문자열로 정규화합니다. 읽을 수 없으면 빈 문자열. */
+function normalizeHashHex_(raw) {
+  var s = String(raw || '').trim();
+  var hex = codaCryptoHexToBytes_(s);
+  if (hex.length) return codaCryptoBytesToHex_(hex);
+  try {
+    var b64 = Utilities.base64Decode(s);
+    if (b64 && b64.length) {
+      var out = [];
+      for (var i = 0; i < b64.length; i++) out.push(b64[i] & 255);
+      return codaCryptoBytesToHex_(out);
+    }
+  } catch (err) { /* base64 아님 */ }
+  return '';
 }
 
 function bytesToHex_(bytes) {
@@ -633,11 +736,14 @@ function onOpen() {
     .addItem('계정 활성/비활성', 'adminToggleStatus')
     .addSeparator()
     .addItem('만료 세션 정리', 'adminPurgeSessions')
+    .addItem('보안 자체 점검 (PBKDF2 속도)', 'adminSecuritySelfTest')
     .addToUi();
 }
 
 function setupSpreadsheet() {
   Object.keys(HEADERS).forEach(function (name) { getSheet_(name); });
+  // 기존 시트에 빠진 열(pw_algorithm 등)이 있으면 오른쪽 끝에 보완합니다.
+  ensureColumns_(SHEET_STUDENTS, HEADERS.Students);
   // 내부 시트는 숨김 처리
   [SHEET_SESSIONS, SHEET_ATTEMPTS].forEach(function (name) {
     var s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
@@ -646,7 +752,21 @@ function setupSpreadsheet() {
   // onOpen 트리거 등록 (중복 방지)
   var already = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'onOpen'; });
   if (!already) ScriptApp.newTrigger('onOpen').forSpreadsheet(SpreadsheetApp.getActive()).onOpen().create();
-  SpreadsheetApp.getUi().alert('설정 완료: Students / StudentProgress / QuizResults / MissionSubmissions 시트가 준비되었습니다.');
+  SpreadsheetApp.getUi().alert('설정 완료: Students / StudentProgress / QuizResults / MissionSubmissions 시트가 준비되었습니다.\n\n' +
+    '※ 비밀번호 검증에는 Crypto.gs 파일이 함께 있어야 합니다. 프로젝트에 없으면 README 의 설치 순서를 확인해 주세요.');
+}
+
+/** 기존 시트에 빠진 열을 오른쪽 끝에 보완합니다. */
+function ensureColumns_(name, columns) {
+  var sheet = getSheet_(name);
+  var lastCol = Math.max(1, sheet.getLastColumn());
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) { return String(h); });
+  columns.forEach(function (col) {
+    if (headers.indexOf(col) === -1) {
+      sheet.getRange(1, headers.length + 1).setValue(col);
+      headers.push(col);
+    }
+  });
 }
 
 function adminAddStudent() {
@@ -666,18 +786,20 @@ function adminAddStudent() {
   var subjects = normalizeSubjectInput_(parts[5] || '');
 
   if (!name || !loginId || !password) return ui.alert('이름, 아이디, 비밀번호는 필수입니다.');
+  if (typeof codaPbkdf2Hex_ !== 'function') return ui.alert('Crypto.gs 파일이 프로젝트에 없습니다. README 의 설치 순서를 확인해 주세요.');
   var policyError = checkPasswordPolicy_(password);
   if (policyError) return ui.alert(policyError);
   if (findByLoginId_(loginId)) return ui.alert('이미 사용 중인 아이디입니다: ' + loginId);
   if (!subjects) return ui.alert('과목은 python, junior_python, cpp 중 하나 이상이어야 합니다.');
 
-  var salt = makeSalt_();
+  var cred = newPasswordHash_(password);
   appendRow_(SHEET_STUDENTS, {
     student_id: Utilities.getUuid(),
     name: name,
     login_id: loginId,
-    password_hash: hashPassword_(password, salt),
-    password_salt: salt,
+    password_hash: cred.password_hash,
+    password_salt: cred.password_salt,
+    password_algorithm: cred.password_algorithm,
     school: school,
     grade: grade,
     subjects: subjects,
@@ -713,13 +835,15 @@ function adminResetPassword() {
     ui.ButtonSet.OK_CANCEL);
   if (pw.getSelectedButton() !== ui.Button.OK) return;
   var newPassword = pw.getResponseText().trim();
+  if (typeof codaPbkdf2Hex_ !== 'function') return ui.alert('Crypto.gs 파일이 프로젝트에 없습니다. README 의 설치 순서를 확인해 주세요.');
   var policyError = checkPasswordPolicy_(newPassword);
   if (policyError) return ui.alert(policyError);
 
-  var salt = makeSalt_();
-  updateStudentField_(row, 'password_salt', salt);
-  updateStudentField_(row, 'password_hash', hashPassword_(newPassword, salt));
-  ui.alert('비밀번호가 재설정되었습니다.');
+  var cred = newPasswordHash_(newPassword);
+  updateStudentField_(row, 'password_salt', cred.password_salt);
+  updateStudentField_(row, 'password_hash', cred.password_hash);
+  updateStudentField_(row, 'password_algorithm', cred.password_algorithm);
+  ui.alert('비밀번호가 재설정되었습니다. (' + cred.password_algorithm + ')');
 }
 
 function adminSetSubjects() {
@@ -754,6 +878,25 @@ function adminToggleStatus() {
 function adminPurgeSessions() {
   purgeExpiredSessions_();
   SpreadsheetApp.getUi().alert('만료된 세션을 정리했습니다.');
+}
+
+/**
+ * 로그인에 쓰이는 PBKDF2 계산 시간을 실제 런타임에서 측정합니다.
+ * (Apps Script 런타임 속도는 계정/지역에 따라 다르므로 실측값으로 판단하세요)
+ */
+function adminSecuritySelfTest() {
+  var ui = SpreadsheetApp.getUi();
+  if (typeof codaPbkdf2Hex_ !== 'function') {
+    return ui.alert('Crypto.gs 파일이 프로젝트에 없습니다. README 의 설치 순서를 확인해 주세요.');
+  }
+  var salt = makeSalt_();
+  var started = Date.now();
+  codaPbkdf2Hex_('coda-speed-test', decodeSaltBytes_(salt), PBKDF2_ITERATIONS, 32);
+  var ms = Date.now() - started;
+  ui.alert('PBKDF2-HMAC-SHA256 ' + PBKDF2_ITERATIONS + '회\n\n실측 시간: ' + ms + 'ms\n\n' +
+    (ms > 20000
+      ? '⚠ 로그인 지연이 큽니다. Code.gs 의 PBKDF2_ITERATIONS 를 낮추고(예: 100000) 학생 비밀번호를 재설정하는 것을 권장합니다.'
+      : '✔ 로그인에 사용할 수 있는 속도입니다. 학생은 로그인 시 이 시간만큼 대기합니다.'));
 }
 
 /** 같은 로그인 아이디가 이미 있는지 확인 */

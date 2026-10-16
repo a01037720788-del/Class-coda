@@ -1,3 +1,5 @@
+import { SHEETS_API_URL as FALLBACK_API_URL } from "./sheetsConfig";
+
 /**
  * Google Apps Script 웹 앱 클라이언트
  *
@@ -7,7 +9,8 @@
  *   (Apps Script 웹 앱은 OPTIONS 요청을 처리하지 않습니다)
  */
 
-const API_URL = (import.meta.env.VITE_SHEETS_API_URL || "").trim();
+// 우선순위: 빌드 환경변수 → sheetsConfig.js 에 적어 둔 주소
+const API_URL = (import.meta.env.VITE_SHEETS_API_URL || FALLBACK_API_URL || "").trim();
 const TOKEN_KEY = "coda_session_token";
 
 export function isConfigured() {
@@ -62,15 +65,15 @@ export async function login(loginId, password) {
   return data.student;
 }
 
-/** 저장된 토큰이 아직 유효한지 서버에 확인합니다. */
+/**
+ * 저장된 토큰이 아직 유효한지 서버에 확인합니다.
+ * - 서버가 "무효"라고 답하면 null (만료 · 로그아웃 · 비활성 계정)
+ * - 서버에 연결할 수 없으면 예외를 던집니다 → 일시적 오류를 로그아웃으로 처리하지 않도록
+ */
 export async function validateSession() {
   if (!getToken()) return null;
-  try {
-    const data = await call("validateSession");
-    return data.valid ? data.student : null;
-  } catch {
-    return null;
-  }
+  const data = await call("validateSession");
+  return data.valid ? data.student : null;
 }
 
 export async function logout() {

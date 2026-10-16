@@ -1,40 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { getSessionUser } from "@/lib/auth";
-import { loadStudent, loadAllSubjects, loadEnrollments } from "@/lib/dataAccess";
 import { Lock } from "lucide-react";
 import { hasSubjectAccess, getSubjectType } from "@/utils/subjectAccess";
 
+/**
+ * 수강 과목 접근 제한.
+ * Students 시트의 subjects 열(로그인 · 세션 검증 때 서버가 내려준 값)만 기준으로 판단합니다.
+ */
 export default function SubjectGuard({ subjectKey, children }) {
-  const [allowed, setAllowed] = useState(null); // null = 로딩 중
-
-  useEffect(() => {
-    const u = getSessionUser();
-    if (!u?.student_id) { setAllowed(false); return; }
-
-    Promise.all([
-      loadStudent(u.student_id),
-      loadAllSubjects(),
-      loadEnrollments(u.student_id),
-    ])
-      .then(([student, subjectList, enrollments]) => {
-        if (!student) { setAllowed(false); return; }
-        // subjectKey는 과목 이름 (e.g. "HTML", "엔트리", "저학년 Python") → type key로 변환
-        const typeKey = getSubjectType(subjectKey, subjectList) || subjectKey.toLowerCase().replace(/\s/g, "_");
-        // 해당 Subject가 명시적으로 비활성(is_active === false)이면 접근 불가
-        const subjectRecord = subjectList.find(s => s.type === typeKey || getSubjectType(s.name, []) === typeKey);
-        if (subjectRecord && subjectRecord.is_active === false) { setAllowed(false); return; }
-        setAllowed(hasSubjectAccess(typeKey, student, subjectList, enrollments));
-      })
-      .catch(() => setAllowed(false));
-  }, [subjectKey]);
-
-  if (allowed === null) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-gray-300 border-t-[#7c3aed] rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const user = getSessionUser();
+  const typeKey = getSubjectType(subjectKey, []) || subjectKey;
+  const allowed = !!user?.student_id && hasSubjectAccess(typeKey, user);
 
   if (!allowed) {
     return (

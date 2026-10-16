@@ -89,3 +89,20 @@ export function isStudent(user) {
 export function isParent(user) {
   return user?.role === 'parent';
 }
+
+// ─── 서버(Google Sheets) 학생 정보 → 앱 세션 사용자 ─────────────────
+// Apps Script 가 로그인/세션 검증 후 내려주는 공개 정보만 사용합니다.
+// (password_hash · password_salt · 학생 명단은 서버가 절대 내려보내지 않습니다)
+export function toSessionUser(student) {
+  if (!student) return null;
+  return {
+    role: 'student',
+    student_id: student.student_id || '',
+    login_id: student.login_id || '',
+    name: student.name || '',
+    school: student.school || '',
+    grade: student.grade || '',
+    subjects: Array.isArray(student.subjects) ? student.subjects : [],
+    status: student.status || 'active',
+  };
+}

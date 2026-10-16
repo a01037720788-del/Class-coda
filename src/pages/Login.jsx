@@ -1,8 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { Lock, User, Loader2, Code2, Moon, Sun, Eye, EyeOff } from "lucide-react";
-import { setSessionToken, setSessionUser, getSessionToken, clearSessionToken } from "@/lib/auth";
-import { base44 } from "@/api/base44Client";
+import {
+  setSessionToken, setSessionUser, getSessionToken, clearSession, toSessionUser,
+} from "@/lib/auth";
+import { login as loginWithSheets, getToken, validateSession } from "@/lib/sheetsApi";
 import { appPath } from "@/lib/basePath";
+
+const STUDENT_HOME = "/student/home";
+
+// 서버(Apps Script) 응답 코드 → 학생 안내 문구
+function loginErrorMessage(err) {
+  if (!err) return "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+  if (err.message === "STUDENT_ID_NOT_LINKED") {
+    return "학생 정보가 연결되지 않았습니다. 선생님께 문의해 주세요.";
+  }
+  if (err.code === "auth_failed") return "아이디 또는 비밀번호가 올바르지 않습니다.";
+  if (err.code === "invalid_input") return "아이디와 비밀번호를 모두 입력해 주세요.";
+  // 잠금 · 비활성 · 서버 설정 안내는 서버가 만든 문구를 그대로 보여줍니다.
+  if (err.code) return err.message;
+  // 서버에 닿지 못한 경우(네트워크 · 주소 미설정)
+  return /[가-힣]/.test(String(err.message || ""))
+    ? err.message
+    : "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+}
 
 export default function Login() {
   const [loginId, setLoginId] = useState("");
@@ -14,24 +34,34 @@ export default function Login() {
   const [dark, setDark] = useState(() => localStorage.getItem("coda_theme") === "dark");
 
   useEffect(() => {
-    // 자동 로그인: 저장된 세션 토큰이 있으면 localStorage 사용자로 복원
-    const token = getSessionToken();
-    if (token) {
-      const storedUser = JSON.parse(localStorage.getItem("coda_session_user") || "null");
-      if (storedUser) {
-        setSessionUser(storedUser);
-        redirectByRole(storedUser.role, storedUser.must_change_password);
-      } else {
-        clearSessionToken();
-      }
-      return;
-    }
-    // 자동로그인 저장된 ID 불러오기
+    let cancelled = false;
+
+    // 아이디 저장 복원
     const savedId = localStorage.getItem("coda_remember_id");
     if (savedId) {
       setLoginId(savedId);
       setRememberMe(true);
     }
+
+    // 저장된 세션은 반드시 서버(Apps Script)에서 유효성을 확인한 뒤 사용합니다.
+    if (!getSessionToken()) return;
+
+    (async () => {
+      try {
+        const student = await validateSession();
+        if (cancelled) return;
+        if (student) {
+          setSessionUser(toSessionUser(student));
+          window.location.href = appPath(STUDENT_HOME);
+        } else {
+          clearSession();            // 만료 · 로그아웃 · 비활성 계정
+        }
+      } catch {
+        // 서버에 연결할 수 없으면 로그인 화면을 그대로 보여줍니다.
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -44,55 +74,30 @@ export default function Login() {
     }
   }, [dark]);
 
-  const redirectByRole = (role, mustChangePassword = false) => {
-    if (mustChangePassword) {
-      window.location.href = appPath("/change-password");
-      return;
-    }
-    if (role === "super_admin" || role === "admin" || role === "teacher") {
-      window.location.href = appPath("/admin/students");
-    } else if (role === "student") {
-      window.location.href = appPath("/student/home");
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("appLogin", { login_id: loginId, password });
-      const data = res?.data || res;
-      if (!data?.user) {
-        const code = data?.error || "";
-        if (code.includes('USER_NOT_FOUND')) throw new Error('USER_NOT_FOUND');
-        if (code.includes('WRONG_PASSWORD')) throw new Error('WRONG_PASSWORD');
-        if (code.includes('ACCOUNT_DEACTIVATED')) throw new Error('ACCOUNT_DEACTIVATED');
-        throw new Error('LOGIN_ERROR');
-      }
+      // 서버(Google Apps Script)가 Students 시트의 해시로 비밀번호를 검증하고,
+      // 검증에 성공했을 때만 검증 가능한 세션 토큰을 발급합니다.
+      const student = await loginWithSheets(loginId, password);
+      const sessionUser = toSessionUser(student);
+      if (!sessionUser?.student_id) throw new Error("STUDENT_ID_NOT_LINKED");
 
-      // 학생 role인데 student_id가 없으면 로그인 거부
-      if (data.user.role === "student" && !data.user.student_id) {
-        throw new Error("STUDENT_ID_NOT_LINKED");
-      }
+      setSessionToken(getToken());     // 서버가 발급한 토큰 (클라이언트 생성 토큰 사용 안 함)
+      setSessionUser(sessionUser);     // 해시 · 솔트는 내려오지 않습니다
 
-      const tempToken = "b44_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      setSessionToken(tempToken);
-      setSessionUser(data.user);
-      // 자동로그인 ID 저장
+      // 아이디 저장
       if (rememberMe) {
         localStorage.setItem("coda_remember_id", loginId);
       } else {
         localStorage.removeItem("coda_remember_id");
       }
-      redirectByRole(data.user.role, data.user.must_change_password);
+
+      window.location.href = appPath(STUDENT_HOME);   // 로그인 성공 → 학생 홈
     } catch (err) {
-      const code = err.message;
-      if (code === 'USER_NOT_FOUND') { setError("존재하지 않는 아이디입니다."); }
-      else if (code === 'WRONG_PASSWORD') { setError("비밀번호가 올바르지 않습니다."); }
-      else if (code === 'ACCOUNT_DEACTIVATED') { setError("사용이 중지된 계정입니다. 관리자에게 문의해 주세요."); }
-      else if (code === 'STUDENT_ID_NOT_LINKED') { setError("학생 계정과 학생 정보가 연결되지 않았습니다. 관리자에게 문의해 주세요."); }
-      else { setError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."); }
+      setError(loginErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useSessionAuth } from "@/hooks/useSessionAuth";
 import { isStudent, clearSession } from "@/lib/auth";
-import { loadStudent, loadStudentByLoginId, loadActiveSubjects, loadEnrollments } from "@/lib/dataAccess";
+import { logout as logoutFromSheets } from "@/lib/sheetsApi";
 import { Home, Code2, Settings, LogOut, GraduationCap, Menu, X } from "lucide-react";
 import { usePageTracker } from "@/hooks/usePageTracker";
 import NotificationBell from "@/components/common/NotificationBell";
@@ -23,20 +23,20 @@ function LoadingScreen() {
 
 export default function StudentLayout() {
   const { user, loading } = useSessionAuth();
-  const [studentData, setStudentData] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loadError, setLoadError] = useState(null);
 
   usePageTracker();
 
   const handleLogout = async () => {
+    await logoutFromSheets();        // 서버 세션도 함께 폐기합니다
     clearSession();
     window.location.href = appPath("/login");
   };
 
-  const buildMenu = (student, subjectList, enrollments) => {
-    const active = resolveActiveSubjects(student, subjectList, enrollments);
+  // 수강 과목은 Students 시트의 subjects 열(서버가 검증해 내려준 값)만 사용합니다.
+  const buildMenu = (student) => {
+    const active = resolveActiveSubjects(student);
     const items = [{ path: "/student/home", label: "홈", icon: Home, key: "home" }];
     SUBJECT_CONFIGS.forEach(cfg => {
       if (active.has(cfg.key)) {
@@ -47,51 +47,11 @@ export default function StudentLayout() {
     setMenuItems(items);
   };
 
-  // 학생 데이터 로드 — 1차: get_student_learning_context RPC (SECURITY DEFINER)
-  //                     2차: 개별 loadStudent/loadActiveSubjects/loadEnrollments (폴백)
+  // 메뉴 구성 — 서버가 검증해 내려준 세션 사용자(시트의 subjects 포함)만 사용합니다.
   useEffect(() => {
-    if (!user?.student_id) return;
-
-    const loadStudentData = async () => {
-      try {
-        let student = null;
-        let subjectList = [];
-        let enrollments = [];
-
-        // Base44 학생 ID로 조회하고, 기존 연결 데이터 호환을 위해 login_id도 확인
-        let resolvedStudent = await loadStudent(user.student_id);
-        let resolvedSid = user.student_id;
-        if (!resolvedStudent && user.login_id) {
-          resolvedStudent = await loadStudentByLoginId(user.login_id);
-          if (resolvedStudent) resolvedSid = resolvedStudent.id;
-        }
-        const [subjData, enrollData] = await Promise.all([
-          loadActiveSubjects(),
-          loadEnrollments(resolvedSid),
-        ]);
-        student = resolvedStudent;
-        subjectList = subjData;
-        enrollments = enrollData;
-
-        if (student) {
-          setStudentData(student);
-          buildMenu(student, subjectList, enrollments);
-        } else {
-          console.error("[StudentLayout] 학생 정보 조회 실패: student_id에 해당하는 students 레코드가 없습니다.", {
-            app_user_student_id: user.student_id,
-          });
-          setLoadError("학생 계정과 학생 정보가 연결되지 않았습니다. 관리자에게 문의해 주세요.");
-        }
-      } catch (err) {
-        console.error("[StudentLayout] 학생 데이터 로드 실패:", err);
-        setLoadError(`학생 데이터 조회 실패: ${err?.message || err}`);
-      }
-    };
-
-    loadStudentData();
-    const interval = setInterval(loadStudentData, 120000);
-    return () => clearInterval(interval);
-  }, [user?.student_id]);
+    if (!user) return;
+    buildMenu(user);
+  }, [user]);
 
   // 로딩 중
   if (loading) return <LoadingScreen />;
@@ -116,30 +76,6 @@ export default function StudentLayout() {
           <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">
             로그아웃
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 학생 데이터 로드 실패 표시
-  if (loadError) {
-    return (
-      <div className="min-h-screen bg-[#f0f0f5] flex items-center justify-center p-6">
-        <div className="bg-white rounded-xl border border-red-200 shadow-sm p-8 max-w-md w-full text-center">
-          <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
-            <span className="text-red-500 text-xl">⚠</span>
-          </div>
-          <p className="text-red-600 font-semibold mb-2">데이터 로드 오류</p>
-          <p className="text-sm text-gray-600 break-all">{loadError}</p>
-          <p className="text-xs text-gray-400 mt-3">app_users.student_id: {user?.student_id || "(없음)"}</p>
-          <div className="flex gap-2 mt-4 justify-center">
-            <button onClick={handleLogout} className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">
-              로그아웃
-            </button>
-            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300">
-              새로고침
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -269,7 +205,7 @@ export default function StudentLayout() {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-6">
-        <Outlet context={{ studentData, user }} />
+        <Outlet context={{ studentData: user, user }} />
       </div>
 
       {/* 모바일 하단 네비게이션 (최대 5개 고정) */}

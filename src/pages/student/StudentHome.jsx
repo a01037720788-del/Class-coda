@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getSessionUser } from "@/lib/auth";
-import { loadUnits, loadAllProgress, loadActiveSubjects, loadEnrollments } from "@/lib/dataAccess";
+import { loadUnits, loadAllProgress } from "@/lib/dataAccess";
 import { Code2, BookOpen, ChevronRight, CheckCircle, Loader2 } from "lucide-react";
 import { useOutletContext, Link } from "react-router-dom";
 import { SUBJECT_CONFIGS, resolveActiveSubjects } from "@/utils/subjectAccess";
@@ -27,24 +27,23 @@ export default function StudentHome() {
       const u = getSessionUser();
       const sid = studentData?.id || u?.student_id;
 
-      const [subjData, ...unitLists] = await Promise.all([
-        loadActiveSubjects(),
-        ...SUBJECT_CONFIGS.map(cfg => loadUnits(cfg.key, { metadataOnly: true })),
-      ]);
+      const unitLists = await Promise.all(
+        SUBJECT_CONFIGS.map(cfg => loadUnits(cfg.key, { metadataOnly: true }))
+      );
       const map = {};
       SUBJECT_CONFIGS.forEach((cfg, i) => { map[cfg.key] = unitLists[i] || []; });
 
       let prog = [];
-      let enrollData = [];
       if (sid) {
-        [prog, enrollData] = await Promise.all([loadAllProgress(sid), loadEnrollments(sid)]);
+        prog = await loadAllProgress(sid);
         prog = prog.filter(p => !p.unit_title?.startsWith("__"));
       }
 
       if (cancelled) return;
       setUnitsByKey(map);
       setProgresses(prog);
-      setActiveKeys(resolveActiveSubjects(studentData, subjData, enrollData));
+      // 수강 과목은 Students 시트의 subjects 열 기준 (로그인 시 서버가 검증해 내려준 값)
+      setActiveKeys(resolveActiveSubjects(studentData));
       setLoading(false);
     };
     load();

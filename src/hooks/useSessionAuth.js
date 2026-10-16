@@ -1,8 +1,11 @@
-// 세션 인증 훅 — localStorage에 저장된 세션 사용자로 복원.
-// Supabase 의존성 제거 — 서버 세션 검증 대신 로컬 캐시 사용.
+// 세션 인증 훅 — Google Apps Script 서버에 세션 유효성을 확인한 뒤 사용자 정보를 반환합니다.
+// 로컬 캐시만 믿지 않고, 만료 · 로그아웃 · 비활성 계정은 서버 응답으로 차단됩니다.
 
 import { useState, useEffect } from 'react';
-import { getSessionToken, clearSessionToken, setSessionUser, getSessionUser } from '@/lib/auth';
+import {
+  getSessionToken, getSessionUser, setSessionUser, clearSession, toSessionUser,
+} from '@/lib/auth';
+import { validateSession } from '@/lib/sheetsApi';
 
 export function useSessionAuth() {
   const [user, setUser] = useState(() => getSessionUser());
@@ -12,28 +15,29 @@ export function useSessionAuth() {
     let cancelled = false;
 
     async function verify() {
-      const token = getSessionToken();
-
-      if (!token) {
-        setUser(null);
-        setLoading(false);
+      if (!getSessionToken()) {
+        if (!cancelled) { setUser(null); setLoading(false); }
         return;
       }
 
-      // localStorage에서 저장된 사용자 정보 복원
-      const storedUser = getSessionUser();
-      if (cancelled) return;
+      try {
+        const student = await validateSession();       // 서버 검증 (무효면 null)
+        if (cancelled) return;
 
-      if (!storedUser) {
-        clearSessionToken();
-        setUser(null);
-        setLoading(false);
-        return;
+        if (student) {
+          const fresh = toSessionUser(student);
+          setSessionUser(fresh);                       // 검증된 값으로 갱신 (수강 과목 포함)
+          setUser(fresh);
+        } else {
+          clearSession();
+          setUser(null);
+        }
+      } catch (err) {
+        // 서버에 연결할 수 없는 일시적 상황에서는 캐시된 사용자로 화면을 유지합니다.
+        if (!cancelled) setUser(getSessionUser());
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      setSessionUser(storedUser);
-      setUser(storedUser);
-      setLoading(false);
     }
 
     verify();
