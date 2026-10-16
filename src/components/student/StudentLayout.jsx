@@ -10,7 +10,7 @@ import PWAInstallBanner from "@/components/common/PWAInstallBanner";
 import { SUBJECT_CONFIGS, resolveActiveSubjects } from "@/utils/subjectAccess";
 
 // 모바일 하단 고정 표시 과목 우선순위 (최대 4개 + 홈)
-const MOBILE_PRIORITY = ["python", "junior_python", "cpp", "html", "algorithm", "entry", "block", "cos"];
+const MOBILE_PRIORITY = ["python", "junior_python", "cpp"];
 
 function LoadingScreen() {
   return (
@@ -152,7 +152,7 @@ export default function StudentLayout() {
 
   // 학생 권한 없음 → 관리자 페이지로
   if (!isStudent(user)) {
-    window.location.href = "/admin/dashboard";
+    window.location.href = "/admin/students";
     return <LoadingScreen />;
   }
 

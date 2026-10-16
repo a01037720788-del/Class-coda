@@ -25,11 +25,9 @@ export default function ForceChangePassword() {
 
   const redirectByRole = (role) => {
     if (role === "super_admin" || role === "admin" || role === "teacher") {
-      window.location.href = "/admin/dashboard";
+      window.location.href = "/admin/students";
     } else if (role === "student") {
       window.location.href = "/student/home";
-    } else if (role === "parent") {
-      window.location.href = "/parent/home";
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Lock, User, Loader2, Code2, Heart, Moon, Sun, Eye, EyeOff } from "lucide-react";
+import { Lock, User, Loader2, Code2, Moon, Sun, Eye, EyeOff } from "lucide-react";
 import { setSessionToken, setSessionUser, getSessionToken, clearSessionToken } from "@/lib/auth";
 import { base44 } from "@/api/base44Client";
 
@@ -49,11 +49,9 @@ export default function Login() {
       return;
     }
     if (role === "super_admin" || role === "admin" || role === "teacher") {
-      window.location.href = "/admin/dashboard";
+      window.location.href = "/admin/students";
     } else if (role === "student") {
       window.location.href = "/student/home";
-    } else if (role === "parent") {
-      window.location.href = "/parent/home";
     }
   };
 
@@ -130,7 +128,7 @@ export default function Login() {
 
         {/* 로그인 카드 */}
         <div className={`rounded-2xl border shadow-xl shadow-gray-100/50 p-8 ${card}`}>
-          <h2 className={`text-base font-bold mb-5 ${text}`}>학생 로그인</h2>
+          <h2 className={`text-base font-bold mb-5 ${text}`}>로그인</h2>
 
           {error && (
             <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
@@ -212,17 +210,6 @@ export default function Login() {
         <p className={`text-center text-xs mt-4 ${subtext}`}>
           계정은 관리자에게 발급받아 주세요.
         </p>
-
-        {/* 학부모 로그인 */}
-        <div className="mt-3">
-          <button
-            onClick={() => { window.location.href = "/parent-login"; }}
-            className={`w-full h-11 rounded-xl border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${dark ? "border-gray-800 bg-gray-900 text-gray-400 hover:bg-gray-800" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 shadow-sm"}`}
-          >
-            <Heart className="w-4 h-4 text-pink-400" />
-            학부모 로그인으로 가기
-          </button>
-        </div>
 
         <p className={`text-center text-xs mt-6 ${subtext}`}>
           © 2025 CODA 학원

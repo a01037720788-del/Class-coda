@@ -1,29 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useSessionAuth } from "@/hooks/useSessionAuth";
-import { isAdmin, isSuperAdmin, clearSession, getSessionToken } from "@/lib/auth";
-import {
-  LayoutDashboard, Users, BookOpen, Calendar, Code2,
-  MessageSquare, Settings, LogOut, Crown, Shield, BarChart2, Menu, X, ClipboardList, TableProperties, FileCheck
-} from "lucide-react";
+import { isAdmin, clearSession, getSessionToken } from "@/lib/auth";
+import { Users, LogOut, Crown, Menu, X } from "lucide-react";
 import NotificationBell from "@/components/common/NotificationBell";
 import PWAInstallBanner from "@/components/common/PWAInstallBanner";
 
 const baseMenuItems = [
-  { path: "/admin/dashboard", label: "대시보드", icon: LayoutDashboard },
   { path: "/admin/students", label: "학생 관리", icon: Users },
-  { path: "/admin/subjects", label: "과목 관리", icon: BookOpen },
-  { path: "/admin/calendar", label: "수업 캘린더", icon: Calendar },
-  { path: "/admin/attendance", label: "출석부", icon: ClipboardList },
-  { path: "/admin/lesson-record", label: "수업 기록표", icon: TableProperties },
-  { path: "/admin/feedback", label: "피드백 관리", icon: MessageSquare },
-  { path: "/admin/problems", label: "문제 관리", icon: Code2 },
-  { path: "/admin/student-submissions", label: "제출 현황", icon: FileCheck },
-];
-
-const superAdminMenuItems = [
-  { path: "/admin/teacher-stats", label: "선생님 통계", icon: BarChart2 },
-  { path: "/admin/settings", label: "관리자 계정 관리", icon: Shield },
 ];
 
 function SidebarContent({ user, menuItems, roleBadge, onLogout, onClose, showBell }) {
@@ -139,19 +123,11 @@ export default function AdminLayout() {
     return <LoadingScreen />;
   }
 
-  const menuItems = isSuperAdmin(user)
-    ? [...baseMenuItems, ...superAdminMenuItems]
-    : baseMenuItems;
+  const menuItems = baseMenuItems;
 
   const roleBadge = user?.role === "super_admin" ? "총 관리자" : user?.role === "teacher" ? "선생님" : "관리자";
 
-  // 모바일 하단 네비 — 학생/과목/문제/계정 관리 제외
-  const mobileNavItems = menuItems.filter(item =>
-    !item.path.includes("/students") &&
-    !item.path.includes("/subjects") &&
-    !item.path.includes("/problems") &&
-    !item.path.includes("/settings")
-  );
+  const mobileNavItems = menuItems;
 
   return (
     <div className="flex h-screen bg-[#f0f0f5]">
