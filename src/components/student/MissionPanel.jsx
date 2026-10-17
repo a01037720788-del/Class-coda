@@ -154,9 +154,9 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
       }
 
       // ── 2단계: DB 제출 저장 + 진행도 업데이트 (단일 RPC 트랜잭션) ────────
-      const shouldUnlock = testCases.length > 0 ? isCorrect : (isCorrect || !expected);
+      const shouldUnlock = isCorrect === true;
       let progressUpdate = null;
-      if (shouldUnlock && !isMissionCompleted(mIdx, mNum)) {
+      if (shouldUnlock && !completedIds.includes(mIdx)) {
         const locallyCompleted = missions.flatMap((mission, index) => {
           const number = mission.number || index + 1;
           return submitted[number]?.isCorrect === true && submitted[number]?.saveFailed !== true
@@ -216,7 +216,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
       const subData = { done: true, isCorrect, output };
       setSubmitted(prev => ({ ...prev, [mNum]: subData }));
       saveMissionToDisk(unitId, mNum, subData);
-      if (onProgressUpdate) onProgressUpdate();
+      if (onProgressUpdate) await onProgressUpdate();
     } catch (error) {
       console.error("[MissionPanel] 제출 중 예외:", error);
       toast({ title: "제출에 실패했습니다.", description: error?.message || "오류가 발생했습니다.", variant: "destructive" });
@@ -335,7 +335,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
                     <p className="text-xs font-semibold text-gray-500">💻 코드 작성</p>
                     <PythonCodeEditor
                       value={code}
-                      onChange={v => setCodes(c => ({ ...c, [mNum]: v }))}
+                      onChange={v => { setCodes(c => ({ ...c, [mNum]: v })); setRunResults(r => ({ ...r, [mNum]: null })); }}
                       defaultCode={m.default_code || `print("Hello CODA")`}
                       showRunButton={true}
                       onRun={data => handleRun(mNum, data)}

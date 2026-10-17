@@ -60,7 +60,7 @@ export default function StudentPythonUnits() {
     const sid = u?.student_id;
     if (sid) {
       const progs = await loadAllProgress(sid);
-      setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python"));
+      setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python" || (!p.unit_type && !p.subject_type && data.some(u => String(u.id) === String(p.unit_id)))));
     }
   };
 
@@ -78,7 +78,7 @@ export default function StudentPythonUnits() {
     const sid = getSid();
     if (!sid) return;
     const progs = await loadAllProgress(sid);
-    setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python"));
+    setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python" || (!p.unit_type && !p.subject_type && units.some(u => String(u.id) === String(p.unit_id)))));
   };
 
   const handleSaveMemo = async () => {

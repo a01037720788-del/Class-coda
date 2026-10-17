@@ -284,7 +284,7 @@ function assertOwnStudent(studentId) {
 const readLearning = () => sheetsGetProgress();
 const asObject = v => v && typeof v === "object" && !Array.isArray(v) ? v : {};
 function normalizeProgress(r) {
-  let stored = r.data;
+  let stored = r.data ?? r.progress_data ?? {};
   if (typeof stored === "string") {
     try { stored = JSON.parse(stored); } catch { stored = {}; }
   }
@@ -300,7 +300,7 @@ function normalizeProgress(r) {
   };
 }
 function normalizeSubmission(r, type) {
-  const d = asObject(typeof r.data === "string" ? (() => { try { return JSON.parse(r.data); } catch { return {}; } })() : r.data);
+  const d = asObject(r.data);
   const num = type === "question" ? r.item_number : r.mission_number;
   return {
     ...d,
@@ -471,8 +471,9 @@ export async function saveMissionSubmission(studentId, unitId, missionNumber, da
   const units = await loadUnitsFromRepo(subject);
   const unit = units.find(u => String(u.id) === String(unitId));
   const index = unit?.missions?.findIndex((m, i) => Number(m.number || i + 1) === Number(missionNumber)) ?? -1;
-  // 채점 결과가 정답이면 progressUpdate 유무와 관계없이 완료 ID를 저장합니다.
-  // progressUpdate는 화면의 추가 상태이며 정답 판정에 사용하지 않습니다.
+  // 기존 MissionPanel은 정답이면서 테스트케이스가 없고 expected 출력도 없으면 통과 처리합니다.
+  // 서버 진도 저장은 실제 정답 판정에 따라 수행합니다.
+  // progressUpdate 유무로 정답 여부를 판단하면 재제출 시 저장이 누락될 수 있습니다.
   return saveCompletedItem(studentId, unitId, "mission", index, data?.is_correct === true, context, progressUpdate);
 }
 

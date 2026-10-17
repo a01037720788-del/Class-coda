@@ -612,7 +612,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
     setSaveError(null);
 
     // 주관식이거나 오답이거나 이미 완료된 문제는 DB 저장하지 않음
-    if (isCorrect === null || !isCorrect || isQuestionCompleted(qIdx)) return;
+    if (isCorrect === null || !isCorrect || completedIds.includes(qIdx)) return;
 
     // 세션 토큰 사전 확인 — 없으면 401이 아니라 명확한 메시지
     if (!getSessionToken()) {
@@ -650,12 +650,12 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
         const isMismatch = (err?.message || "").includes("일치하지 않습니다");
         setSaveError(isMismatch
           ? "학생 계정 연결 정보가 일치하지 않습니다."
-          : "문제 결과 저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
+          : "정답이지만 진도 저장에 실패했습니다. 새로고침 후 다시 제출해 주세요.");
       }
     }
 
     setOpenIdx(null);
-    if (onProgressUpdate) onProgressUpdate();
+    if (onProgressUpdate) await onProgressUpdate();
   };
 
   // 타입 정규화 후 컴포넌트 선택
