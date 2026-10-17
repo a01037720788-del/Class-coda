@@ -165,13 +165,10 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
         const newCompleted = [...new Set([...completedIds, ...locallyCompleted, mIdx])];
         const total = missions.length;
         const rate = total > 0 ? (newCompleted.length / total) * 100 : 0;
-        const allDone = newCompleted.length >= total;
         progressUpdate = {
           completed_mission_ids: newCompleted,
           current_mission_index: newCompleted.length,
           mission_progress_rate: rate,
-          is_unit_completed: allDone,
-          is_completed: allDone,
           last_studied_at: new Date().toISOString(),
         };
       }

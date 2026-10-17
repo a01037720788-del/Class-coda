@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { loadUnits, loadAllProgress, saveProgress } from "@/lib/dataAccess";
 import { getSessionUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,31 @@ import QuestionPanel from "@/components/student/QuestionPanel";
 import InteractiveCodeBlock from "@/components/student/InteractiveCodeBlock";
 import UnitToc from "@/components/student/UnitToc";
 
+// 완료 ID가 배열 또는 JSON 문자열로 전달되어도 동일하게 처리합니다.
+function normalizeCompletedIds(value, total) {
+  let ids = value;
+  if (typeof ids === "string") {
+    try { ids = JSON.parse(ids); } catch { ids = []; }
+  }
+  if (!Array.isArray(ids)) return [];
+  return [...new Set(ids.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n < total))];
+}
+
+function getUnitCompletion(unit, progress) {
+  const ex = unit.example_codes?.length || 0;
+  const q = unit.questions?.length || 0;
+  const m = unit.missions?.length || 0;
+  const completedEx = normalizeCompletedIds(progress?.completed_example_ids, ex).length;
+  const completedQ = normalizeCompletedIds(progress?.completed_question_ids, q).length;
+  const completedM = normalizeCompletedIds(progress?.completed_mission_ids, m).length;
+  const total = ex + q + m;
+  return {
+    completedEx, completedQ, completedM,
+    // 없는 학습 유형은 조건에서 제외하지만, 빈 유닛은 자동 완료하지 않습니다.
+    isDone: total > 0 && completedEx === ex && completedQ === q && completedM === m,
+  };
+}
+
 export default function StudentJuniorPythonUnits() {
   const [units, setUnits] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -22,6 +47,7 @@ export default function StudentJuniorPythonUnits() {
   const [memo, setMemo] = useState("");
   const [memoSaved, setMemoSaved] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const completionSaving = useRef(new Set());
 
   useEffect(() => {
     const u = getSessionUser();
@@ -39,6 +65,30 @@ export default function StudentJuniorPythonUnits() {
       setProgresses(progs.filter(p => p.unit_type === "junior_python"));
     }
   };
+
+  // 서버에 저장된 세 유형의 완료 ID를 기준으로 유닛 완료를 확정합니다.
+  useEffect(() => {
+    if (!user?.student_id || !units.length || !progresses.length) return;
+    units.forEach(unit => {
+      const progress = progresses.find(p => String(p.unit_id) === String(unit.id));
+      if (!progress || !getUnitCompletion(unit, progress).isDone) return;
+      if (progress.is_unit_completed === true && progress.is_completed === true) return;
+      const key = `${user.student_id}:${unit.id}`;
+      if (completionSaving.current.has(key)) return;
+      completionSaving.current.add(key);
+      saveProgress(user.student_id, unit.id, {
+        is_unit_completed: true,
+        is_completed: true,
+        last_studied_at: new Date().toISOString(),
+      }, {
+        studentName: user.name || "",
+        unitTitle: unit.title || "",
+        unitType: "junior_python",
+      }).then(() => refreshProgress()).catch(err => {
+        console.error("[JuniorPythonUnits] 유닛 완료 저장 실패:", err);
+      }).finally(() => completionSaving.current.delete(key));
+    });
+  }, [user, units, progresses]);
 
   const getProgress = useCallback((unitId) => progresses.find(p => p.unit_id === unitId), [progresses]);
   const getSid = () => user?.student_id;
@@ -85,9 +135,7 @@ export default function StudentJuniorPythonUnits() {
     const exampleCount = selectedUnit.example_codes?.length || 0;
     const questionCount = selectedUnit.questions?.length || 0;
     const missionCount = selectedUnit.missions?.length || 0;
-    const completedExamples = (progress?.completed_example_ids || []).length;
-    const completedQuestions = (progress?.completed_question_ids || []).length;
-    const completedMissions = (progress?.completed_mission_ids || []).length;
+    const { completedEx: completedExamples, completedQ: completedQuestions, completedM: completedMissions, isDone } = getUnitCompletion(selectedUnit, progress);
 
     return (
       <div className="p-0 max-w-6xl mx-auto">
@@ -124,7 +172,7 @@ export default function StudentJuniorPythonUnits() {
                 {completedMissions >= missionCount && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
               </div>
             )}
-            {(progress?.is_unit_completed || progress?.is_completed) && (
+            {isDone && (
               <Badge className="bg-lime-100 text-lime-700 border-0 gap-1 ml-auto">
                 <CheckCircle className="w-3 h-3" />Unit 완료!
               </Badge>
@@ -299,10 +347,7 @@ export default function StudentJuniorPythonUnits() {
             const exCount = unit.example_codes?.length || 0;
             const qCount = unit.questions?.length || 0;
             const mCount = unit.missions?.length || 0;
-            const completedEx = (progress?.completed_example_ids || []).length;
-            const completedQ = (progress?.completed_question_ids || []).length;
-            const completedM = (progress?.completed_mission_ids || []).length;
-            const isDone = progress?.is_unit_completed || progress?.is_completed;
+            const { completedEx, completedQ, completedM, isDone } = getUnitCompletion(unit, progress);
 
             return (
               <div key={unit.id} onClick={() => handleSelectUnit(unit)}
