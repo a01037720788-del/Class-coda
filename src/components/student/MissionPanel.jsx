@@ -73,7 +73,11 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
   }, [unitId, missions.length]);
 
   const getSid = () => user?.student_id;
-  const completedIds = progress?.completed_mission_ids || [];
+  const completedIds = (Array.isArray(progress?.completed_mission_ids)
+    ? progress.completed_mission_ids : []).map(Number).filter(Number.isFinite);
+  const isMissionCompleted = (index, missionNumber) =>
+    completedIds.includes(index) ||
+    (submitted[missionNumber]?.isCorrect === true && submitted[missionNumber]?.saveFailed !== true);
 
   const toggle = (i) => {
     setOpenIdx(prev => prev === i ? null : i);
@@ -152,8 +156,13 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
       // ── 2단계: DB 제출 저장 + 진행도 업데이트 (단일 RPC 트랜잭션) ────────
       const shouldUnlock = testCases.length > 0 ? isCorrect : (isCorrect || !expected);
       let progressUpdate = null;
-      if (shouldUnlock && !completedIds.includes(mIdx)) {
-        const newCompleted = [...completedIds, mIdx];
+      if (shouldUnlock && !isMissionCompleted(mIdx, mNum)) {
+        const locallyCompleted = missions.flatMap((mission, index) => {
+          const number = mission.number || index + 1;
+          return submitted[number]?.isCorrect === true && submitted[number]?.saveFailed !== true
+            ? [index] : [];
+        });
+        const newCompleted = [...new Set([...completedIds, ...locallyCompleted, mIdx])];
         const total = missions.length;
         const rate = total > 0 ? (newCompleted.length / total) * 100 : 0;
         const allDone = newCompleted.length >= total;
@@ -223,7 +232,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
     return <p className="text-gray-400 text-sm text-center py-8">Mission이 없습니다.</p>;
   }
 
-  const completedCount = completedIds.length;
+  const completedCount = missions.filter((m, i) => isMissionCompleted(i, m.number || i + 1)).length;
   const totalCount = missions.length;
 
   return (
@@ -240,7 +249,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
 
       {missions.map((m, i) => {
         const mNum = m.number || i + 1;
-        const isCompleted = completedIds.includes(i);
+        const isCompleted = isMissionCompleted(i, mNum);
         const code = codes[mNum] ?? m.default_code ?? `print("Hello CODA")`;
         const runResult = runResults[mNum];
         const sub = submitted[mNum];
