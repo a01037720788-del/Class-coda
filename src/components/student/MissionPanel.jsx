@@ -173,6 +173,14 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
         };
       }
 
+      // 이미 완료된 미션의 재도전은 채점만 수행하고 중복 저장하지 않습니다.
+      if (completedIds.includes(mIdx)) {
+        const subData = { done: true, isCorrect, output };
+        setSubmitted(prev => ({ ...prev, [mNum]: subData }));
+        toast({ title: isCorrect ? "재도전 정답!" : "재도전 결과", description: isCorrect ? "완료 기록은 유지됩니다." : "다시 시도해 보세요. 기존 완료 기록은 유지됩니다." });
+        return;
+      }
+
       try {
         await saveMissionSubmission(student_id, unitId, mNum, {
           mission_description: m.description || "",
@@ -346,10 +354,10 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
                       stdinDescription={m.stdin_description || ""}
                       forceShowStdin={m.uses_input === true}
                     />
-                    <Button onClick={() => handleSubmit(m, i, mNum)} disabled={submitting[mNum] || isCompleted}
+                    <Button onClick={() => handleSubmit(m, i, mNum)} disabled={submitting[mNum]}
                       className={`gap-2 ${isCompleted ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700"}`}>
                       {isCompleted
-                        ? <><CheckCircle2 className="w-4 h-4" />제출 완료</>
+                        ? <><CheckCircle2 className="w-4 h-4" />다시 제출하기</>
                         : <><Send className="w-4 h-4" />{submitting[mNum] ? "제출 중..." : "제출하기"}</>}
                     </Button>
                     {sub && (

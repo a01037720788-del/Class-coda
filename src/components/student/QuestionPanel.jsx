@@ -593,26 +593,32 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
   const [openIdx, setOpenIdx] = useState(null);
   const [showCompleted, setShowCompleted] = useState(true);
   const [saveError, setSaveError] = useState(null);
+  const [retrying, setRetrying] = useState({});
+  const [retryVersion, setRetryVersion] = useState({});
+  const [everCompleted, setEverCompleted] = useState(() => Object.keys(loadSaved(unitId)).filter(k => loadSaved(unitId)[k]?.isCorrect === true).map(Number));
   // 서버 진도와 현재 화면에서 정답 처리한 결과를 함께 반영합니다.
   // 저장된 ID는 숫자/문자열 형태 모두 허용합니다.
   const completedIds = (Array.isArray(progress?.completed_question_ids)
     ? progress.completed_question_ids : []).map(Number).filter(Number.isFinite);
   const isQuestionCompleted = (i) =>
-    completedIds.includes(i) || submitted[i]?.isCorrect === true;
+    completedIds.includes(i) || everCompleted.includes(i) || submitted[i]?.isCorrect === true;
 
   const getSid = () => user?.student_id;
   const toggle = (i) => setOpenIdx(prev => prev === i ? null : i);
 
   const handleSubmit = async (qIdx, qNum, qType, answer, isCorrect) => {
     // 1. 정답 판정 UI 먼저 표시 (DB 저장 실패와 무관하게 화면에 결과 표시)
+    const alreadyCompleted = isQuestionCompleted(qIdx);
+    if (isCorrect === true) setEverCompleted(prev => [...new Set([...prev, qIdx])]);
     const newState = { answer, isCorrect, done: true, submittedAt: new Date().toISOString() };
     const next = { ...submitted, [qIdx]: newState };
     setSubmitted(next);
-    saveToDisk(unitId, next);
+    if (!alreadyCompleted) saveToDisk(unitId, next);
+    if (isCorrect === true) setRetrying(prev => ({ ...prev, [qIdx]: false }));
     setSaveError(null);
 
     // 주관식이거나 오답이거나 이미 완료된 문제는 DB 저장하지 않음
-    if (isCorrect === null || !isCorrect || completedIds.includes(qIdx)) return;
+    if (isCorrect === null || !isCorrect || alreadyCompleted) return;
 
     // 세션 토큰 사전 확인 — 없으면 401이 아니라 명확한 메시지
     if (!getSessionToken()) {
@@ -662,8 +668,8 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
   const renderQuestion = (q, i, state, isCompleted) => {
     const nt = normalizeType(q.type);
     const props = {
-      q, disabled: isCompleted,
-      savedAnswer: state?.answer, savedCorrect: state?.isCorrect,
+      q, disabled: isCompleted && !retrying[i],
+      savedAnswer: retrying[i] ? undefined : state?.answer, savedCorrect: retrying[i] ? undefined : state?.isCorrect,
       onSubmit: (ans, ok) => handleSubmit(i, q.number || i + 1, q.type, ans, ok),
     };
     if (nt === "객관식" || nt === "객관식복수") return <MultipleChoice {...props} />;
@@ -711,7 +717,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
         const qNum = q.number || i + 1;
         const nt = normalizeType(q.type);
         const isCompleted = isQuestionCompleted(i);
-        const state = submitted[i];
+        const state = retrying[i] ? null : submitted[i];
         const isPending = nt === "주관식" && state?.isCorrect === null && state?.done;
         const isWrong = state?.isCorrect === false;
         const isOpen = openIdx === i;
