@@ -284,8 +284,12 @@ function assertOwnStudent(studentId) {
 const readLearning = () => sheetsGetProgress();
 const asObject = v => v && typeof v === "object" && !Array.isArray(v) ? v : {};
 function normalizeProgress(r) {
+  let stored = r.data;
+  if (typeof stored === "string") {
+    try { stored = JSON.parse(stored); } catch { stored = {}; }
+  }
   return {
-    ...asObject(r.data),
+    ...asObject(stored),
     student_id: r.student_id,
     subject_type: r.subject,
     unit_type: r.subject,
@@ -314,7 +318,9 @@ export async function loadAllProgress(studentId) {
   if (!studentId) return [];
   assertOwnStudent(studentId);
   const result = await readLearning();
-  return (result.progress || []).map(normalizeProgress);
+  return (result.progress || [])
+    .filter(r => !r.student_id || String(r.student_id) === String(studentId))
+    .map(normalizeProgress);
 }
 export async function loadProgress(studentId, unitId) {
   if (!studentId || !unitId) return null;

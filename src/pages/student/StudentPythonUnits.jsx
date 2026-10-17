@@ -16,6 +16,29 @@ import InteractiveCodeBlock from "@/components/student/InteractiveCodeBlock";
 import UnitToc from "@/components/student/UnitToc";
 
 
+// Google Sheets에서 배열 또는 JSON 문자열로 반환되는 완료 번호를 정규화합니다.
+function normalizeCompletedIds(value, total) {
+  let ids = value;
+  if (typeof ids === "string") {
+    try { ids = JSON.parse(ids); } catch { ids = []; }
+  }
+  if (!Array.isArray(ids)) return [];
+  return [...new Set(ids.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n < total))];
+}
+
+function getUnitCompletion(unit, progress) {
+  const ex = unit.example_codes?.length || 0;
+  const q = unit.questions?.length || 0;
+  const m = unit.missions?.length || 0;
+  const completedEx = normalizeCompletedIds(progress?.completed_example_ids, ex).length;
+  const completedQ = normalizeCompletedIds(progress?.completed_question_ids, q).length;
+  const completedM = normalizeCompletedIds(progress?.completed_mission_ids, m).length;
+  return {
+    completedEx, completedQ, completedM,
+    isDone: ex + q + m > 0 && completedEx === ex && completedQ === q && completedM === m,
+  };
+}
+
 export default function StudentPythonUnits() {
   const [units, setUnits] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -37,11 +60,11 @@ export default function StudentPythonUnits() {
     const sid = u?.student_id;
     if (sid) {
       const progs = await loadAllProgress(sid);
-      setProgresses(progs.filter(p => !p.unit_title?.startsWith("__")));
+      setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python"));
     }
   };
 
-  const getProgress = useCallback((unitId) => progresses.find(p => p.unit_id === unitId), [progresses]);
+  const getProgress = useCallback((unitId) => progresses.find(p => String(p.unit_id) === String(unitId)), [progresses]);
   const getSid = () => user?.student_id;
 
   const handleSelectUnit = (unit) => {
@@ -55,7 +78,7 @@ export default function StudentPythonUnits() {
     const sid = getSid();
     if (!sid) return;
     const progs = await loadAllProgress(sid);
-    setProgresses(progs.filter(p => !p.unit_title?.startsWith("__")));
+    setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python"));
   };
 
   const handleSaveMemo = async () => {
@@ -81,9 +104,7 @@ export default function StudentPythonUnits() {
     const exampleCount = selectedUnit.example_codes?.length || 0;
     const questionCount = selectedUnit.questions?.length || 0;
     const missionCount = selectedUnit.missions?.length || 0;
-    const completedExamples = (progress?.completed_example_ids || []).length;
-    const completedQuestions = (progress?.completed_question_ids || []).length;
-    const completedMissions = (progress?.completed_mission_ids || []).length;
+    const { completedEx: completedExamples, completedQ: completedQuestions, completedM: completedMissions, isDone } = getUnitCompletion(selectedUnit, progress);
 
     return (
       <div className="p-0 max-w-6xl mx-auto">
@@ -122,7 +143,7 @@ export default function StudentPythonUnits() {
                 {completedMissions >= missionCount && <CheckCircle className="w-3.5 h-3.5 text-green-600" />}
               </div>
             )}
-            {(progress?.is_unit_completed || progress?.is_completed) && (
+            {isDone && (
               <Badge className="bg-green-100 text-green-700 border-0 gap-1 ml-auto">
                 <CheckCircle className="w-3 h-3" />Unit 완료!
               </Badge>
@@ -220,6 +241,8 @@ export default function StudentPythonUnits() {
                   exampleCodes={selectedUnit.example_codes || []}
                   user={user}
                   unitId={selectedUnit.id}
+                  unitTitle={selectedUnit.title}
+                  unitType="python"
                   progress={progress}
                   onProgressUpdate={refreshProgress}
                 />
@@ -233,6 +256,8 @@ export default function StudentPythonUnits() {
                   questions={selectedUnit.questions || []}
                   user={user}
                   unitId={selectedUnit.id}
+                  unitTitle={selectedUnit.title}
+                  unitType="python"
                   progress={progress}
                   onProgressUpdate={refreshProgress}
                 />
@@ -247,6 +272,7 @@ export default function StudentPythonUnits() {
                   user={user}
                   unitId={selectedUnit.id}
                   unitTitle={selectedUnit.title}
+                  unitType="python"
                   progress={progress}
                   onProgressUpdate={refreshProgress}
                 />
@@ -311,10 +337,7 @@ export default function StudentPythonUnits() {
             const exCount = unit.example_codes?.length || 0;
             const qCount = unit.questions?.length || 0;
             const mCount = unit.missions?.length || 0;
-            const completedEx = (progress?.completed_example_ids || []).length;
-            const completedQ = (progress?.completed_question_ids || []).length;
-            const completedM = (progress?.completed_mission_ids || []).length;
-            const isDone = progress?.is_unit_completed || progress?.is_completed;
+            const { completedEx, completedQ, completedM, isDone } = getUnitCompletion(unit, progress);
 
             return (
               <div key={unit.id} onClick={() => handleSelectUnit(unit)}
