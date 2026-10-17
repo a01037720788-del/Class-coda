@@ -1,9 +1,9 @@
-// 핵심 학습 데이터 접근 레이어 (Base44 Entity 전용)
-//
-// 모든 데이터는 Base44 Entity를 통해 접근합니다. Supabase 의존성 완전 제거.
-// 학생/과목/수강관리는 base44AdminAction 백엔드 함수 사용.
-// Unit/진도/제출 데이터는 Base44 Entity 직접 조회.
-import { loadActiveUnitsFromRepo } from "./unitsRepo";
+// CODA 학습 데이터 접근 레이어
+// Python / 저학년 Python / C++ 단원은 GitHub JSON에서 조회합니다.
+// 학습 진도, 퀴즈, 미션, 예제 연습은 Google Sheets API에 저장합니다.
+// 기타 기존 관리자/과목 관리 함수에는 Base44 의존성이 남아 있습니다.
+import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
+import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
 import { base44 } from "@/api/base44Client";
 import { getSessionToken, getSessionUser } from "./auth";
 import { extractFunctionError } from "./errorUtils";
@@ -251,184 +251,164 @@ export async function deleteSubmissionsByUnit(unitId) {
   return deleteProgressByUnit(unitId);
 }
 
-// ─── Progress (Base44 StudentUnitProgress Entity) ──────────────
+// ─── 학습 기록: Google Sheets / Apps Script ────────────────────────────────
+// 세 과목의 JSON 단원 ID를 사용해 서버에서 요구하는 subject를 찾습니다.
+const CODA_SUBJECTS = ["python", "junior_python", "cpp"];
+let unitSubjectIndexPromise;
+async function unitSubjectIndex() {
+  if (!unitSubjectIndexPromise) {
+    unitSubjectIndexPromise = Promise.all(CODA_SUBJECTS.map(async subject => {
+      const units = await loadUnitsFromRepo(subject);
+      return units.map(u => [String(u.id), subject]);
+    })).then(groups => new Map(groups.flat())).catch(err => {
+      unitSubjectIndexPromise = null;
+      throw err;
+    });
+  }
+  return unitSubjectIndexPromise;
+}
+async function resolveSubject(unitId, context = {}) {
+  const explicit = context.unitType || context.subject_type || context.subject;
+  if (CODA_SUBJECTS.includes(explicit)) return explicit;
+  const index = await unitSubjectIndex();
+  const subject = index.get(String(unitId));
+  if (!subject) throw new Error(`지원하지 않는 단원입니다: ${unitId}`);
+  return subject;
+}
+function assertOwnStudent(studentId) {
+  const current = getSessionUser()?.student_id;
+  if (!current || String(studentId) !== String(current)) {
+    throw new Error("현재 로그인한 학생의 학습 기록만 조회·저장할 수 있습니다.");
+  }
+}
+const readLearning = () => sheetsGetProgress();
+const asObject = v => v && typeof v === "object" && !Array.isArray(v) ? v : {};
+function normalizeProgress(r) {
+  return {
+    ...asObject(r.data),
+    student_id: r.student_id,
+    subject_type: r.subject,
+    unit_id: r.unit_id,
+    completed: r.completed === true || String(r.completed).toLowerCase() === "true",
+    last_studied_at: r.last_accessed,
+    last_accessed: r.last_accessed,
+  };
+}
+function normalizeSubmission(r, type) {
+  const d = asObject(r.data);
+  const num = type === "question" ? r.item_number : r.mission_number;
+  return {
+    ...d,
+    id: `${type}:${r.unit_id}:${num}`,
+    student_id: r.student_id,
+    unit_id: r.unit_id,
+    item_type: type,
+    item_number: num,
+    data: d,
+    is_correct: type === "question" ? d.is_correct === true : r.is_correct === true || String(r.is_correct).toLowerCase() === "true",
+    submitted_at: r.submitted_at,
+  };
+}
 export async function loadAllProgress(studentId) {
   if (!studentId) return [];
-  try {
-    const items = await base44.entities.StudentUnitProgress.filter({ student_id: studentId });
-    return items || [];
-  } catch (err) {
-    console.warn("[dataAccess] loadAllProgress 실패:", err?.message);
-    return [];
-  }
+  assertOwnStudent(studentId);
+  const result = await readLearning();
+  return (result.progress || []).map(normalizeProgress);
 }
-
 export async function loadProgress(studentId, unitId) {
   if (!studentId || !unitId) return null;
-  try {
-    const items = await base44.entities.StudentUnitProgress.filter({ student_id: studentId, unit_id: unitId });
-    return items?.[0] || null;
-  } catch (err) {
-    console.warn("[dataAccess] loadProgress 실패:", err?.message);
-    return null;
-  }
+  return (await loadAllProgress(studentId)).find(p => String(p.unit_id) === String(unitId)) || null;
 }
-
 export async function saveProgress(studentId, unitId, data, context = {}) {
   if (!studentId || !unitId) return;
-  const { studentName, unitTitle, unitType } = context;
-  try {
-    const existing = await loadProgress(studentId, unitId);
-    const updateData = {
-      ...data,
-      student_name: studentName || existing?.student_name || "",
-      unit_title: unitTitle || existing?.unit_title || "",
-      last_studied_at: new Date().toISOString(),
-    };
-    if (existing) {
-      return await base44.entities.StudentUnitProgress.update(existing.id, updateData);
-    } else {
-      return await base44.entities.StudentUnitProgress.create({
-        student_id: studentId,
-        unit_id: unitId,
-        student_name: studentName || "",
-        unit_title: unitTitle || "",
-        ...data,
-        last_studied_at: new Date().toISOString(),
-      });
-    }
-  } catch (err) {
-    console.error("[dataAccess] saveProgress 실패:", {
-      errorMessage: err?.message,
-      studentId, unitId,
-    });
-    throw err;
-  }
+  assertOwnStudent(studentId);
+  const subject = await resolveSubject(unitId, context);
+  const existing = await loadProgress(studentId, unitId);
+  const merged = {
+    ...asObject(existing), ...asObject(data),
+    student_name: context.studentName || existing?.student_name || "",
+    unit_title: context.unitTitle || existing?.unit_title || "",
+  };
+  const completed = merged.completed === true;
+  await sheetsSaveProgress({ subject, unitId: String(unitId), completed, data: merged });
+  return { ...merged, student_id: studentId, unit_id: unitId, completed };
 }
-
-// ─── Submissions (Base44 StudentSubmission Entity) ───────────────
 export async function loadSubmissions(studentId, unitId, itemType) {
   if (!studentId || !unitId) return [];
-  try {
-    let filter = { student_id: studentId, unit_id: unitId };
-    const items = await base44.entities.StudentSubmission.filter(filter);
-    let result = items || [];
-    if (itemType) {
-      result = result.filter((s) => s.item_type === itemType);
-    }
-    return result.sort((a, b) => (a.item_number || 0) - (b.item_number || 0));
-  } catch (err) {
-    console.warn("[dataAccess] loadSubmissions 실패:", err?.message);
-    return [];
-  }
+  assertOwnStudent(studentId);
+  const result = await readLearning();
+  const rows = [
+    ...(result.quiz_results || []).map(r => normalizeSubmission(r, "question")),
+    ...(result.mission_submissions || []).map(r => normalizeSubmission(r, "mission")),
+    ...((result.progress || []).flatMap(r => {
+      const examples = asObject(r.data).example_practices || {};
+      return Object.entries(examples).map(([num, data]) => ({
+        id: `example:${r.unit_id}:${num}`, student_id: r.student_id,
+        unit_id: r.unit_id, item_type: "example", item_number: Number(num),
+        data, is_correct: data.is_matched === true, submitted_at: data.tried_at,
+      }));
+    })),
+  ];
+  return rows.filter(r => String(r.unit_id) === String(unitId) && (!itemType || r.item_type === itemType))
+    .sort((a,b) => Number(a.item_number || 0) - Number(b.item_number || 0));
 }
-
 export async function loadExamplePractices(studentId, unitId) {
   const rows = await loadSubmissions(studentId, unitId, "example");
-  return rows.map((r) => ({
-    id: r.id,
-    example_index: r.item_number,
-    filename: r.data?.filename || "",
-    typed_code: r.data?.typed_code || "",
-    stdin: r.data?.stdin || "",
-    execution_result: r.data?.execution_result || "",
-    expected_output: r.data?.expected_output || "",
-    is_matched: r.is_correct || false,
+  return rows.map(r => ({
+    id: r.id, example_index: r.item_number,
+    filename: r.data?.filename || "", typed_code: r.data?.typed_code || "",
+    stdin: r.data?.stdin || "", execution_result: r.data?.execution_result || "",
+    expected_output: r.data?.expected_output || "", is_matched: r.is_correct,
     tried_at: r.submitted_at,
   }));
 }
-
 export async function loadQuestionResults(studentId, unitId) {
   const rows = await loadSubmissions(studentId, unitId, "question");
-  return rows.map((r) => ({
-    id: r.id,
-    question_number: r.item_number,
-    answer: r.data?.answer || "",
-    is_correct: r.is_correct || false,
-    question_type: r.data?.question_type || "",
-    attempt_count: r.data?.attempt_count || 1,
-    answered_at: r.submitted_at,
+  return rows.map(r => ({
+    id: r.id, question_number: r.item_number, answer: r.data?.answer ?? "",
+    is_correct: r.is_correct, question_type: r.data?.question_type || "",
+    attempt_count: r.data?.attempt_count || 1, answered_at: r.submitted_at,
   }));
 }
-
 export async function loadMissionSubmissions(studentId, unitId) {
   const rows = await loadSubmissions(studentId, unitId, "mission");
-  return rows.map((r) => ({
-    id: r.id,
-    mission_number: r.item_number,
+  return rows.map(r => ({
+    id: r.id, mission_number: r.item_number,
     submitted_code: r.data?.submitted_code || "",
     submitted_stdin: r.data?.submitted_stdin || "",
     execution_result: r.data?.execution_result || "",
     expected_output: r.data?.expected_output || "",
-    is_correct: r.is_correct || false,
-    grading_mode: r.data?.grading_mode || "normalize",
-    test_case_results: r.data?.test_case_results || [],
-    submitted_at: r.submitted_at,
+    is_correct: r.is_correct, grading_mode: r.data?.grading_mode || "normalize",
+    test_case_results: r.data?.test_case_results || [], submitted_at: r.submitted_at,
   }));
 }
-
-// ─── 제출 저장 헬퍼 (upsert: 동일 student+unit+item_type+item_number) ──
-async function upsertSubmission(studentId, unitId, itemType, itemNumber, data, isCorrect, context = {}) {
-  if (!studentId || !unitId) return;
-  const { studentName, unitTitle, unitType } = context;
-  try {
-    const existing = await base44.entities.StudentSubmission.filter({
-      student_id: studentId,
-      unit_id: unitId,
-      item_type: itemType,
-      item_number: itemNumber,
-    });
-    const record = {
-      student_id: studentId,
-      student_name: studentName || existing?.[0]?.student_name || "",
-      login_id: getSessionUser()?.login_id || "",
-      unit_id: unitId,
-      unit_title: unitTitle || existing?.[0]?.unit_title || "",
-      unit_type: unitType || existing?.[0]?.unit_type || "",
-      item_type: itemType,
-      item_number: itemNumber,
-      data,
-      is_correct: isCorrect,
-      submitted_at: new Date().toISOString(),
-    };
-    if (existing && existing.length > 0) {
-      return await base44.entities.StudentSubmission.update(existing[0].id, record);
-    } else {
-      return await base44.entities.StudentSubmission.create(record);
-    }
-  } catch (err) {
-    console.error(`[dataAccess] upsertSubmission(${itemType}) 실패:`, err?.message);
-    throw err;
-  }
+export async function saveExamplePractice(studentId, unitId, exampleIndex, data, context = {}, progressUpdate = null) {
+  assertOwnStudent(studentId);
+  const existing = await loadProgress(studentId, unitId);
+  const examples = { ...asObject(existing?.example_practices), [exampleIndex]: { ...data, tried_at: new Date().toISOString() } };
+  return saveProgress(studentId, unitId, { ...asObject(progressUpdate), example_practices: examples }, context);
 }
-
-export async function saveExamplePractice(
-  studentId, unitId, exampleIndex, data, context = {}, progressUpdate = null
-) {
-  const result = await upsertSubmission(studentId, unitId, "example", exampleIndex, data, data.is_matched || false, context);
-  if (progressUpdate) {
-    try { await saveProgress(studentId, unitId, progressUpdate, context); } catch {}
-  }
+export async function saveQuestionResult(studentId, unitId, questionNumber, data, context = {}, progressUpdate = null) {
+  assertOwnStudent(studentId);
+  const subject = await resolveSubject(unitId, context);
+  const result = await sheetsSaveQuiz({
+    subject, unitId: String(unitId), itemNumber: questionNumber,
+    score: data.is_correct === true ? 1 : 0,
+    answer: typeof data.answer === "string" ? data.answer : JSON.stringify(data.answer ?? ""),
+    data: { ...data, question_number: questionNumber },
+  });
+  if (progressUpdate) await saveProgress(studentId, unitId, progressUpdate, context);
   return result;
 }
-
-export async function saveQuestionResult(
-  studentId, unitId, questionNumber, data, context = {}, progressUpdate = null
-) {
-  const result = await upsertSubmission(studentId, unitId, "question", questionNumber, data, data.is_correct || false, context);
-  if (progressUpdate) {
-    try { await saveProgress(studentId, unitId, progressUpdate, context); } catch {}
-  }
-  return result;
-}
-
-export async function saveMissionSubmission(
-  studentId, unitId, missionNumber, data, context = {}, progressUpdate = null
-) {
-  const result = await upsertSubmission(studentId, unitId, "mission", missionNumber, data, data.is_correct || false, context);
-  if (progressUpdate) {
-    try { await saveProgress(studentId, unitId, progressUpdate, context); } catch {}
-  }
+export async function saveMissionSubmission(studentId, unitId, missionNumber, data, context = {}, progressUpdate = null) {
+  assertOwnStudent(studentId);
+  const subject = await resolveSubject(unitId, context);
+  const result = await sheetsSaveMission({
+    subject, unitId: String(unitId), missionNumber,
+    submission: String(data.submitted_code ?? ""), isCorrect: data.is_correct === true,
+    data: { ...data, mission_number: missionNumber },
+  });
+  if (progressUpdate) await saveProgress(studentId, unitId, progressUpdate, context);
   return result;
 }
 
