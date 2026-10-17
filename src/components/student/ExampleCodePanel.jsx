@@ -12,6 +12,11 @@ import { compareOutput, countInputCalls } from "@/lib/stdinUtils";
 import StdinInput from "./StdinInput";
 import { getSessionToken } from "@/lib/auth";
 
+// 학생·유닛별 완료 예제 목록 (저장 성공한 항목만 보관)
+const exampleCompletionKey = (sid, unitId) => `coda_example_completed_${sid}_${unitId}`;
+const normalizeIds = (ids) => (Array.isArray(ids) ? ids : [])
+  .map(Number).filter(Number.isInteger);
+
 export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unitTitle, progress, onProgressUpdate, unitType }) {
   const { toast } = useToast();
   const [studentCodes, setStudentCodes] = useState({});
@@ -26,10 +31,10 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
   const sid = user?.student_id;
   const { theme } = useTheme(sid);
 
-  const completedIds = [
-    ...(progress?.completed_example_ids || []),
-    ...localCompleted.filter(id => !(progress?.completed_example_ids || []).includes(id))
-  ];
+  const completedIds = [...new Set([
+    ...normalizeIds(progress?.completed_example_ids),
+    ...normalizeIds(localCompleted),
+  ])].filter(idx => idx >= 0 && idx < exampleCodes.length);
 
   useEffect(() => {
     if (!sid || !unitId) return;
@@ -43,13 +48,14 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
     });
     setStudentCodes(codes);
     setResults(res);
+    setLocalCompleted(normalizeIds(storageLoad(exampleCompletionKey(sid, unitId), [])));
   }, [sid, unitId, exampleCodes.length]);
 
   useEffect(() => {
     const init = {};
     completedIds.forEach(idx => { init[idx] = true; });
     setCollapsed(init);
-  }, [progress?.completed_example_ids?.length]);
+  }, [sid, unitId, progress?.completed_example_ids, localCompleted]);
 
   const saveCode = (idx, code) => {
     if (sid && unitId) storageSave(storageKeys.pythonExampleCode(sid, unitId, idx), code);
@@ -166,7 +172,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
       // 정답이면 진행도 데이터 준비 (단일 RPC로 submission + progress 저장)
       let progressUpdate = null;
       if (isCorrect && !completedIds.includes(idx)) {
-        const newCompleted = [...(progress?.completed_example_ids || []), idx];
+        const newCompleted = [...new Set([...completedIds, idx])];
         const total = exampleCodes.length;
         const rate = total > 0 ? (newCompleted.length / total) * 100 : 0;
         progressUpdate = {
@@ -209,7 +215,11 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
 
       // 정답이면 로컬 완료 상태 업데이트
       if (isCorrect && !completedIds.includes(idx)) {
-        setLocalCompleted(prev => [...prev, idx]);
+        setLocalCompleted(prev => {
+          const next = [...new Set([...normalizeIds(prev), idx])];
+          storageSave(exampleCompletionKey(sid, unitId), next);
+          return next;
+        });
         setCollapsed(c => ({ ...c, [idx]: true }));
         if (onProgressUpdate) onProgressUpdate();
         toast({ title: "✅ 제출 완료!", description: "정답입니다! 예제를 완료했습니다." });
@@ -305,7 +315,10 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
                   <div className="mt-2">
                     <StdinInput
                       value={stdinValues[idx] || ""}
-                      onChange={v => setStdinValues(s => ({ ...s, [idx]: v }))}
+                      onChange={v => {
+                        setStdinValues(s => ({ ...s, [idx]: v }));
+                        setResults(r => ({ ...r, [idx]: null }));
+                      }}
                       code={ec.code || ""}
                       defaultStdin={ec.default_stdin || ""}
                       description={ec.stdin_description || ""}
@@ -319,7 +332,11 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
                   <p className="text-xs font-semibold text-gray-500 mb-2">✏️ 직접 따라쓰기</p>
                   <PythonCodeEditor
                     value={studentCode}
-                    onChange={v => { setStudentCodes(c => ({ ...c, [idx]: v })); saveCode(idx, v); }}
+                    onChange={v => {
+                      setStudentCodes(c => ({ ...c, [idx]: v }));
+                      setResults(r => ({ ...r, [idx]: null }));
+                      saveCode(idx, v);
+                    }}
                     defaultCode=""
                     showRunButton={false}
                     height="160px"
