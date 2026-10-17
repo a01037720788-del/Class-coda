@@ -28,6 +28,20 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
   const [localCompleted, setLocalCompleted] = useState([]);
   const [stdinValues, setStdinValues] = useState({});
   const [expandedEditors, setExpandedEditors] = useState({});
+  useEffect(() => {
+    if (!Object.values(expandedEditors).some(Boolean)) return;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setExpandedEditors({});
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [expandedEditors]);
+
 
   const sid = user?.student_id;
   const { theme } = useTheme(sid);
@@ -296,15 +310,16 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
             </div>
 
             {!isCollapsed && (
-              <div className={`grid grid-cols-1 ${isExpanded ? "gap-2" : "md:grid-cols-2 gap-0 md:divide-x divide-gray-200"}`}>
+              <div className={`grid grid-cols-1 ${isExpanded ? "fixed inset-0 z-[9999] bg-white grid-cols-2 gap-0 divide-x divide-gray-200 pt-12 overflow-hidden" : "md:grid-cols-2 gap-0 md:divide-x divide-gray-200"}`}>
+                {isExpanded && <div className="absolute inset-x-0 top-0 h-12 bg-slate-900 text-white flex items-center justify-between px-4 z-10"><span className="font-semibold text-sm">예제 {idx + 1} · 전체 화면 (원본 코드 50% / 작성 코드 50%)</span><Button type="button" size="sm" variant="outline" className="bg-white text-slate-900" onClick={() => setExpandedEditors(v => ({ ...v, [idx]: false }))}><Minimize2 className="w-4 h-4 mr-1" />전체 화면 닫기</Button></div>}
                 {/* 원본 코드 */}
-                <div className="p-4">
-                  <div className="flex items-center justify-between gap-2 mb-2"><p className="text-xs font-semibold text-gray-500">📖 원본 코드</p><Button type="button" size="sm" variant="outline" onClick={() => setExpandedEditors(s => ({...s, [idx]: !s[idx]}))} className="gap-1 text-xs">{isExpanded ? <Minimize2 className="w-3.5 h-3.5"/> : <Maximize2 className="w-3.5 h-3.5"/>}{isExpanded ? "기본 크기" : "크게 보기"}</Button></div>
+                <div className={`p-4 ${isExpanded ? "min-w-0 h-full overflow-y-auto" : ""}`}>
+                  <div className="flex items-center justify-between gap-2 mb-2"><p className="text-xs font-semibold text-gray-500">📖 원본 코드</p><Button type="button" size="sm" variant="outline" onClick={() => setExpandedEditors(s => ({...s, [idx]: !s[idx]}))} className="gap-1 text-xs">{isExpanded ? <Minimize2 className="w-3.5 h-3.5"/> : <Maximize2 className="w-3.5 h-3.5"/>}{isExpanded ? "전체 화면 닫기" : "전체 화면"}</Button></div>
                   <div
                     className="rounded-lg p-4 font-mono text-sm whitespace-pre overflow-auto"
                     style={{
-                      minHeight: isExpanded ? "40vh" : "160px",
-                      maxHeight: isExpanded ? "65vh" : "300px",
+                      minHeight: isExpanded ? "65vh" : "160px",
+                      maxHeight: isExpanded ? "75vh" : "300px",
                       backgroundColor: theme.example_code_bg || DEFAULT_THEME.example_code_bg,
                       color: theme.example_code_text || DEFAULT_THEME.example_code_text,
                       userSelect: "none", WebkitUserSelect: "none",
@@ -331,7 +346,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
                 </div>
 
                 {/* 학생 에디터 */}
-                <div className="p-4">
+                <div className={`p-4 ${isExpanded ? "min-w-0 h-full overflow-y-auto" : ""}`}>
                   <p className="text-xs font-semibold text-gray-500 mb-2">✏️ 직접 따라쓰기</p>
                   <PythonCodeEditor
                     value={studentCode}
@@ -342,7 +357,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
                     }}
                     defaultCode=""
                     showRunButton={false}
-                    height={isExpanded ? "55vh" : "160px"}
+                    height={isExpanded ? "70vh" : "160px"}
                     bgColor={theme.student_code_bg}
                     textColor={theme.student_code_text}
                     hideStdin

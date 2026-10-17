@@ -1,385 +1,414 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { runPython } from "@/lib/codeRunner";
-import { saveMissionSubmission } from "@/lib/dataAccess";
+import { saveExamplePractice } from "@/lib/dataAccess";
 import { Button } from "@/components/ui/button";
-import { Send, CheckCircle2, ChevronDown, ChevronUp, ChevronsUpDown, Circle, Maximize2, Minimize2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Play, RefreshCw, CheckCircle2, XCircle, ChevronDown, ChevronUp, Eye, Send, Maximize2, Minimize2 } from "lucide-react";
 import PythonCodeEditor from "./PythonCodeEditor";
+import { useTheme, DEFAULT_THEME } from "@/hooks/useTheme";
+import { storageKeys, storageSave, storageLoad } from "@/lib/storageService";
 import { useToast } from "@/components/ui/use-toast";
+import { compareOutput, countInputCalls } from "@/lib/stdinUtils";
+import StdinInput from "./StdinInput";
 import { getSessionToken } from "@/lib/auth";
 
-import { storageKeys, storageSave, storageLoad } from "@/lib/storageService";
-import { compareOutput } from "@/lib/stdinUtils";
+// 학생·유닛별 완료 예제 목록 (저장 성공한 항목만 보관)
+const exampleCompletionKey = (sid, unitId) => `coda_example_completed_${sid}_${unitId}`;
+const normalizeIds = (ids) => (Array.isArray(ids) ? ids : [])
+  .map(Number).filter(Number.isInteger);
 
-// 미션별로 독립된 키 사용 (unitId + missionNumber)
-function loadSavedMission(unitId, mNum) {
-  return storageLoad(storageKeys.pythonMissionState(unitId, mNum), null);
-}
-function saveMissionToDisk(unitId, mNum, data) {
-  storageSave(storageKeys.pythonMissionState(unitId, mNum), data);
-}
-
-// ─── 애니메이션 래퍼 ──────────────────────────────────────────────────────────
-function Collapsible({ open, children }) {
-  const ref = useRef(null);
-  const [expandedEditors, setExpandedEditors] = useState({});
-  const [height, setHeight] = useState(open ? "auto" : "0px");
-  const [visible, setVisible] = useState(open);
-
-  useEffect(() => {
-    if (open) {
-      setVisible(true);
-      requestAnimationFrame(() => {
-        if (ref.current) setHeight(`${ref.current.scrollHeight}px`);
-        setTimeout(() => setHeight("auto"), 300);
-      });
-    } else {
-      if (ref.current) setHeight(`${ref.current.scrollHeight}px`);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setHeight("0px"));
-      });
-      setTimeout(() => setVisible(false), 300);
-    }
-  }, [open]);
-
-  return (
-    <div style={{ height, overflow: "hidden", transition: "height 0.28s cubic-bezier(0.4,0,0.2,1)" }}>
-      <div ref={ref}>
-        {visible && children}
-      </div>
-    </div>
-  );
-}
-
-export default function MissionPanel({ missions = [], user, unitId, unitTitle, progress, onProgressUpdate, unitType }) {
+export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unitTitle, progress, onProgressUpdate, unitType }) {
   const { toast } = useToast();
-  const [codes, setCodes] = useState({});
-  const [stdinInputs, setStdinInputs] = useState({});
-  const [runResults, setRunResults] = useState({});
+  const [studentCodes, setStudentCodes] = useState({});
+  const [results, setResults] = useState({});
+  const [running, setRunning] = useState({});
   const [submitting, setSubmitting] = useState({});
-  // 미션별 제출 상태를 미션 번호(mNum) 기준으로 관리
-  const [submitted, setSubmitted] = useState({});
-  // openIdx: 현재 열린 미션 인덱스 (null = 모두 접힘, 한 번에 하나만)
-  const [openIdx, setOpenIdx] = useState(null);
+  const [collapsed, setCollapsed] = useState({});
   const [showCompleted, setShowCompleted] = useState(true);
-
-  // 미션 로드 시 각 미션의 저장된 상태 복원
+  const [localCompleted, setLocalCompleted] = useState([]);
+  const [stdinValues, setStdinValues] = useState({});
+  const [expandedEditors, setExpandedEditors] = useState({});
   useEffect(() => {
-    const restored = {};
-    missions.forEach(m => {
-      const mNum = m.number || missions.indexOf(m) + 1;
-      const saved = loadSavedMission(unitId, mNum);
-      if (saved) restored[mNum] = saved;
+    if (!Object.values(expandedEditors).some(Boolean)) return;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setExpandedEditors({});
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [expandedEditors]);
+
+
+  const sid = user?.student_id;
+  const { theme } = useTheme(sid);
+
+  const completedIds = [...new Set([
+    ...normalizeIds(progress?.completed_example_ids),
+    ...normalizeIds(localCompleted),
+  ])].filter(idx => idx >= 0 && idx < exampleCodes.length);
+
+  useEffect(() => {
+    if (!sid || !unitId) return;
+    const codes = {};
+    const res = {};
+    exampleCodes.forEach((_, idx) => {
+      const saved = storageLoad(storageKeys.pythonExampleCode(sid, unitId, idx));
+      if (saved) codes[idx] = saved;
+      const savedResult = storageLoad(storageKeys.pythonExampleResult(sid, unitId, idx));
+      if (savedResult) res[idx] = savedResult;
     });
-    setSubmitted(restored);
-  }, [unitId, missions.length]);
+    setStudentCodes(codes);
+    setResults(res);
+    setLocalCompleted(normalizeIds(storageLoad(exampleCompletionKey(sid, unitId), [])));
+  }, [sid, unitId, exampleCodes.length]);
 
-  const getSid = () => user?.student_id;
-  const completedIds = (Array.isArray(progress?.completed_mission_ids)
-    ? progress.completed_mission_ids : []).map(Number).filter(Number.isFinite);
-  const isMissionCompleted = (index, missionNumber) =>
-    completedIds.includes(index) ||
-    (submitted[missionNumber]?.isCorrect === true && submitted[missionNumber]?.saveFailed !== true);
+  useEffect(() => {
+    const init = {};
+    completedIds.forEach(idx => { init[idx] = true; });
+    setCollapsed(init);
+  }, [sid, unitId, progress?.completed_example_ids, localCompleted]);
 
-  const toggle = (i) => {
-    setOpenIdx(prev => prev === i ? null : i);
+  const saveCode = (idx, code) => {
+    if (sid && unitId) storageSave(storageKeys.pythonExampleCode(sid, unitId, idx), code);
+  };
+  const saveResult = (idx, data) => {
+    if (sid && unitId) storageSave(storageKeys.pythonExampleResult(sid, unitId, idx), data);
   };
 
-  const handleRun = (mNum, data) => setRunResults(r => ({ ...r, [mNum]: data }));
+  // ── 실행 ──────────────────────────────────────────────────────────────────
+  const handleRun = async (idx, ec) => {
+    const code = studentCodes[idx] ?? "";
+    if (!code.trim()) {
+      toast({ title: "코드를 입력해주세요.", variant: "destructive" });
+      return;
+    }
+    setRunning(r => ({ ...r, [idx]: true }));
+    try {
+      const stdin = stdinValues[idx] || "";
+      const data = await runPython({ code, mode: "simple", stdin });
+      const output = data?.output || "";
+      const error = data?.error || "";
 
-  const handleSubmit = async (m, mIdx, mNum) => {
-    const student_id = getSid();
-    if (!student_id) {
+      // input()이 있거나 stdin이 있으면 원본 코드를 같은 stdin으로 실행하여 동적 expected_output 생성
+      let expected = ec.expected_output || "";
+      const inputCount = countInputCalls(ec.code || "");
+      if ((inputCount > 0 || stdin) && ec.code) {
+        try {
+          const origData = await runPython({ code: ec.code, mode: "simple", stdin });
+          if (!origData?.error) {
+            expected = origData.output || "";
+          }
+        } catch (e) {
+          // 원본 실행 실패 시 저장된 expected_output 사용
+        }
+      }
+
+      const isCorrect = !error && (!expected || compareOutput(output, expected, "normalize", code));
+      const matchStatus = error ? "error" : expected ? (isCorrect ? "match" : "mismatch") : "none";
+      const resultData = { output, error, matchStatus, isCorrect };
+
+      setResults(r => ({ ...r, [idx]: resultData }));
+      saveResult(idx, resultData);
+    } catch (error) {
+      console.error("예제 코드 실행 실패:", error);
+      const errMsg = error?.response?.data?.error || error?.message || "실행 중 오류가 발생했습니다.";
+      setResults(r => ({ ...r, [idx]: { output: "", error: errMsg, matchStatus: "error", isCorrect: false } }));
+      toast({ title: "코드 실행 실패", description: errMsg, variant: "destructive" });
+    } finally {
+      setRunning(r => ({ ...r, [idx]: false }));
+    }
+  };
+
+  // ── 제출 ──────────────────────────────────────────────────────────────────
+  const handleSubmit = async (idx, ec) => {
+    if (!sid) {
       toast({ title: "학생 정보를 찾을 수 없습니다.", variant: "destructive" });
       return;
     }
-    // 세션 토큰 사전 확인 — 없으면 401이 아니라 명확한 메시지
     if (!getSessionToken()) {
       toast({ title: "세션 만료", description: "로그인 세션이 만료되었습니다. 다시 로그인해 주세요.", variant: "destructive" });
       return;
     }
+    const code = studentCodes[idx] ?? "";
+    if (!code.trim()) {
+      toast({ title: "코드를 입력해주세요.", variant: "destructive" });
+      return;
+    }
+    const stdin = stdinValues[idx] || "";
 
-    const code = codes[mNum] || m.default_code || `print("Hello CODA")`;
-    if (!code.trim()) return;
-    setSubmitting(s => ({ ...s, [mNum]: true }));
-    const stdin = stdinInputs[mNum] || "";
-    const gradingMode = m.grading_mode || "normalize";
-    const testCases = m.test_cases || [];
-
+    setSubmitting(s => ({ ...s, [idx]: true }));
     try {
-      let isCorrect = false;
-      let execResult = runResults[mNum];
-      let output = "";
-      let error = "";
-      const expected = m.expected_output || "";
-      let testCaseResults = [];
+      // 아직 실행 결과가 없으면 자동 실행
+      let resultData = results[idx];
+      let expected = ec.expected_output || "";
 
-      // ── 1단계: 코드 실행 / 채점 ──────────────────────────────────────────
-      if (testCases.length > 0) {
+      // input()이 있거나 stdin이 있으면 원본 코드를 같은 stdin으로 실행하여 동적 expected_output 생성
+      const inputCount = countInputCalls(ec.code || "");
+      if ((inputCount > 0 || stdin) && ec.code) {
         try {
-          const judgeData = await runPython({ code, mode: "judge", test_cases: testCases });
-          isCorrect = judgeData.verdict === "AC";
-          testCaseResults = (judgeData.results || []).map(r => ({
-            input: r.input, expected_output: r.expected_output,
-            actual_output: r.actual_output, passed: r.passed,
-          }));
-          output = `${judgeData.passed}/${judgeData.total} 테스트케이스 통과`;
-          execResult = { output, error: "", verdict: judgeData.verdict };
-          setRunResults(r => ({ ...r, [mNum]: execResult }));
-        } catch (judgeErr) {
-          console.error("[MissionPanel] 채점 실패:", judgeErr);
-          toast({
-            title: "코드 실행 서버 연결 실패",
-            description: "코드 실행 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else {
-        if (!execResult) {
-          try {
-            execResult = await runPython({ code, mode: "simple", stdin });
-            setRunResults(r => ({ ...r, [mNum]: execResult }));
-          } catch (runErr) {
-            console.error("[MissionPanel] 코드 실행 실패:", runErr);
-            toast({
-              title: "코드 실행 서버 연결 실패",
-              description: "코드 실행 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-              variant: "destructive",
-            });
-            return;
+          const origData = await runPython({ code: ec.code, mode: "simple", stdin });
+          if (!origData?.error) {
+            expected = origData.output || "";
           }
+        } catch (e) {
+          // 원본 실행 실패 시 저장된 expected_output 사용
         }
-        output = execResult?.output || "";
-        error = execResult?.error || "";
-        isCorrect = expected ? (!error && compareOutput(output, expected, gradingMode, code)) : true;
       }
 
-      // ── 2단계: DB 제출 저장 + 진행도 업데이트 (단일 RPC 트랜잭션) ────────
-      const shouldUnlock = isCorrect === true;
+      if (!resultData) {
+        setRunning(r => ({ ...r, [idx]: true }));
+        try {
+          const data = await runPython({ code, mode: "simple", stdin });
+          const output = data?.output || "";
+          const error = data?.error || "";
+
+          const isCorrect = !error && (!expected || compareOutput(output, expected, "normalize", code));
+          const matchStatus = error ? "error" : expected ? (isCorrect ? "match" : "mismatch") : "none";
+          resultData = { output, error, matchStatus, isCorrect };
+          setResults(r => ({ ...r, [idx]: resultData }));
+          saveResult(idx, resultData);
+        } catch (runErr) {
+          const errMsg = runErr?.response?.data?.error || runErr?.message || "실행 오류";
+          toast({ title: "코드 실행 실패", description: errMsg, variant: "destructive" });
+          return;
+        } finally {
+          setRunning(r => ({ ...r, [idx]: false }));
+        }
+      }
+
+      const output = resultData?.output || "";
+      const error = resultData?.error || "";
+      const isCorrect = !error && (!expected || compareOutput(output, expected, "normalize", code));
+
+      // 정답이면 진행도 데이터 준비 (단일 RPC로 submission + progress 저장)
       let progressUpdate = null;
-      if (shouldUnlock && !completedIds.includes(mIdx)) {
-        const locallyCompleted = missions.flatMap((mission, index) => {
-          const number = mission.number || index + 1;
-          return submitted[number]?.isCorrect === true && submitted[number]?.saveFailed !== true
-            ? [index] : [];
-        });
-        const newCompleted = [...new Set([...completedIds, ...locallyCompleted, mIdx])];
-        const total = missions.length;
+      if (isCorrect && !completedIds.includes(idx)) {
+        const newCompleted = [...new Set([...completedIds, idx])];
+        const total = exampleCodes.length;
         const rate = total > 0 ? (newCompleted.length / total) * 100 : 0;
         progressUpdate = {
-          completed_mission_ids: newCompleted,
-          current_mission_index: newCompleted.length,
-          mission_progress_rate: rate,
+          completed_example_ids: newCompleted,
+          current_example_index: newCompleted.length,
+          example_progress_rate: rate,
           last_studied_at: new Date().toISOString(),
         };
       }
 
-      // 이미 완료된 미션의 재도전은 채점만 수행하고 중복 저장하지 않습니다.
-      if (completedIds.includes(mIdx)) {
-        const subData = { done: true, isCorrect, output };
-        setSubmitted(prev => ({ ...prev, [mNum]: subData }));
-        toast({ title: isCorrect ? "재도전 정답!" : "재도전 결과", description: isCorrect ? "완료 기록은 유지됩니다." : "다시 시도해 보세요. 기존 완료 기록은 유지됩니다." });
-        return;
-      }
-
+      // UnitExamplePractice 저장 + 진행도 업데이트 (단일 RPC)
       try {
-        await saveMissionSubmission(student_id, unitId, mNum, {
-          mission_description: m.description || "",
-          submitted_code: code,
-          submitted_stdin: stdin,
+        await saveExamplePractice(sid, unitId, idx, {
+          filename: ec.filename || "",
+          typed_code: code,
+          stdin: stdin,
           execution_result: error || output,
           expected_output: expected,
-          is_correct: isCorrect,
-          grading_mode: gradingMode,
-          ...(testCaseResults.length > 0 ? { test_case_results: testCaseResults } : {}),
+          is_matched: isCorrect,
         }, { studentName: user?.name || "", unitTitle: unitTitle || "", unitType }, progressUpdate);
-
-        toast({ title: "✅ 제출 완료!", description: isCorrect ? "정답입니다!" : "제출이 저장되었습니다." });
-        if (progressUpdate) setOpenIdx(null);
-      } catch (dbError) {
-        console.error("[MissionPanel] 제출 기록 저장 실패:", {
-          errorMessage: dbError?.message,
-          studentId: student_id,
-          unitId, missionNumber: mNum,
-          itemType: "mission",
+      } catch (dbErr) {
+        console.error("[ExampleCodePanel] 제출 기록 저장 실패:", {
+          errorMessage: dbErr?.message,
+          studentId: sid, unitId, exampleIndex: idx,
+          itemType: "example",
           hasSessionToken: !!getSessionToken(),
         });
-        // 실행은 성공했지만 저장 실패 — 구분해서 메시지 표시
-        const isMismatch = (dbError?.message || "").includes("일치하지 않습니다");
+        const isMismatch = (dbErr?.message || "").includes("일치하지 않습니다");
         toast({
           title: isMismatch ? "계정 연결 오류" : "저장 실패",
           description: isMismatch
             ? "학생 계정 연결 정보가 일치하지 않습니다."
             : isCorrect
               ? "정답입니다. 다만 제출 기록 저장에 실패했습니다."
-              : "코드 실행은 완료되었지만 제출 기록 저장에 실패했습니다.",
+              : "코드 실행은 완료되었지만 제출 기록 저장에 실패했습니다. 다시 시도해 주세요.",
           variant: "destructive",
         });
-        // UI에는 결과 표시 (정답 판정은 유지)
-        const subData = { done: true, isCorrect, output, saveFailed: true };
-        setSubmitted(prev => ({ ...prev, [mNum]: subData }));
-        saveMissionToDisk(unitId, mNum, subData);
         return;
       }
 
-      const subData = { done: true, isCorrect, output };
-      setSubmitted(prev => ({ ...prev, [mNum]: subData }));
-      saveMissionToDisk(unitId, mNum, subData);
-      if (onProgressUpdate) await onProgressUpdate();
-    } catch (error) {
-      console.error("[MissionPanel] 제출 중 예외:", error);
-      toast({ title: "제출에 실패했습니다.", description: error?.message || "오류가 발생했습니다.", variant: "destructive" });
+      // 정답이면 로컬 완료 상태 업데이트
+      if (isCorrect && !completedIds.includes(idx)) {
+        setLocalCompleted(prev => {
+          const next = [...new Set([...normalizeIds(prev), idx])];
+          storageSave(exampleCompletionKey(sid, unitId), next);
+          return next;
+        });
+        setCollapsed(c => ({ ...c, [idx]: true }));
+        if (onProgressUpdate) onProgressUpdate();
+        toast({ title: "✅ 제출 완료!", description: "정답입니다! 예제를 완료했습니다." });
+      } else if (isCorrect) {
+        toast({ title: "✅ 제출 완료!", description: "이미 완료된 예제입니다." });
+      } else {
+        toast({ title: "📝 제출 완료", description: error ? "에러가 있습니다. 다시 확인해 주세요." : "결과가 다릅니다. 다시 확인해 주세요." });
+      }
     } finally {
-      setSubmitting(s => ({ ...s, [mNum]: false }));
+      setSubmitting(s => ({ ...s, [idx]: false }));
     }
   };
 
-  if (!missions.length) {
-    return <p className="text-gray-400 text-sm text-center py-8">Mission이 없습니다.</p>;
+  if (!exampleCodes.length) {
+    return <p className="text-gray-400 text-sm text-center py-8">예제 코드가 없습니다.</p>;
   }
 
-  const completedCount = missions.filter((m, i) => isMissionCompleted(i, m.number || i + 1)).length;
-  const totalCount = missions.length;
+  const completedCount = completedIds.length;
+  const totalCount = exampleCodes.length;
 
   return (
-    <div className="space-y-3">
-      {/* 툴바 */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-xs text-gray-500">완료 {completedCount}/{totalCount}개</p>
-        <button onClick={() => setShowCompleted(s => !s)}
-          className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1 transition-colors hover:bg-gray-50">
-          <ChevronsUpDown className="w-3 h-3" />
-          {showCompleted ? "완료 항목 숨기기" : "완료 항목 보기"}
-        </button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-500">
+          완료 <span className="font-bold text-green-600">{completedCount}</span> / {totalCount}
+        </p>
+        <div className="flex gap-2">
+          {completedCount > 0 && (
+            <Button size="sm" variant="outline" className="text-xs gap-1"
+              onClick={() => setShowCompleted(v => !v)}>
+              <Eye className="w-3 h-3" />
+              {showCompleted ? "완료 항목 숨기기" : `완료 항목 보기 (${completedCount})`}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="text-xs gap-1"
+            onClick={() => { const a = {}; exampleCodes.forEach((_, i) => { a[i] = false; }); setCollapsed(a); }}>
+            <ChevronDown className="w-3 h-3" />전체 펼치기
+          </Button>
+          <Button size="sm" variant="outline" className="text-xs gap-1"
+            onClick={() => { const a = {}; exampleCodes.forEach((_, i) => { a[i] = true; }); setCollapsed(a); }}>
+            <ChevronUp className="w-3 h-3" />전체 접기
+          </Button>
+        </div>
       </div>
 
-      {missions.map((m, i) => {
-        const mNum = m.number || i + 1;
-        const isCompleted = isMissionCompleted(i, mNum);
-        const code = codes[mNum] ?? m.default_code ?? `print("Hello CODA")`;
-        const runResult = runResults[mNum];
-        const sub = submitted[mNum];
-        const isOpen = openIdx === i;
+      {exampleCodes.map((ec, idx) => {
+        const isCompleted = completedIds.includes(idx);
+        const result = results[idx];
+        const studentCode = studentCodes[idx] ?? "";
+        const isCollapsed = collapsed[idx] ?? false;
+        const isRunning = !!running[idx];
+        const isSubmitting = !!submitting[idx];
+        const isExpanded = !!expandedEditors[idx];
 
         if (isCompleted && !showCompleted) return null;
 
-        // 상태 아이콘
-        const StatusIcon = () => {
-          if (isCompleted) return <span className="text-base leading-none">✅</span>;
-          if (sub && !sub.isCorrect) return <span className="text-base leading-none">🟡</span>;
-          return <span className="text-gray-300"><Circle className="w-4 h-4" /></span>;
-        };
-
-        const borderColor = isCompleted ? "border-green-300" : isOpen ? "border-orange-300" : "border-gray-200";
-        const headerBg = isOpen
-          ? (isCompleted ? "bg-green-50" : "bg-orange-50")
-          : (isCompleted ? "bg-green-50/50 hover:bg-green-50" : "bg-gray-50 hover:bg-gray-100");
-
         return (
-          <div key={i}
-            className={`border-2 rounded-2xl overflow-hidden transition-all duration-200 ${borderColor} ${isOpen ? "shadow-md" : "shadow-sm"}`}>
-            {/* 헤더 */}
+          <div key={idx} className={`border rounded-xl overflow-hidden transition-all ${isCompleted ? "border-green-300" : "border-gray-200"}`}>
             <div
-              className={`px-4 py-4 sm:py-3 flex items-center justify-between cursor-pointer transition-colors ${headerBg}`}
-              onClick={() => toggle(i)}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <StatusIcon />
-                <span className={`font-bold text-sm flex-shrink-0 ${isCompleted ? "text-green-700" : isOpen ? "text-orange-700" : "text-gray-800"}`}>
-                  Mission {String(mNum).padStart(2, "0")}.
-                </span>
-                {m.title && (
-                  <span className={`text-sm font-semibold truncate ${isCompleted ? "text-green-600" : "text-gray-700"}`}>
-                    {m.title}
-                  </span>
+              className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer ${isCompleted ? "bg-green-50" : "bg-gray-50"} border-b border-gray-200`}
+              onClick={() => setCollapsed(c => ({ ...c, [idx]: !c[idx] }))}>
+              <span className="text-xs font-bold text-gray-500">예제 {idx + 1}.</span>
+              <span className="text-xs font-mono text-blue-600 font-bold">{ec.filename}</span>
+              {ec.description && <span className="text-xs text-gray-400 ml-1">{ec.description}</span>}
+              <div className="ml-auto flex items-center gap-2">
+                {isCompleted && (
+                  <Badge className="bg-green-100 text-green-700 border-0 gap-1 text-xs">
+                    <CheckCircle2 className="w-3 h-3" />확인완료
+                  </Badge>
                 )}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                {isCompleted && <span className="text-xs text-green-600 font-semibold hidden sm:inline">완료</span>}
-                {sub && !sub.isCorrect && !isCompleted && <span className="text-xs text-amber-600 font-semibold hidden sm:inline">재도전</span>}
-                {isOpen
-                  ? <ChevronUp className="w-4 h-4 text-gray-400" />
-                  : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                {isCollapsed ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronUp className="w-4 h-4 text-gray-400" />}
               </div>
             </div>
 
-            {/* 펼쳐지는 본문 — 애니메이션 */}
-            <Collapsible open={isOpen}>
-              <div className="border-t border-gray-100">
-                <div className={`grid grid-cols-1 ${expandedEditors[mNum] ? "gap-2" : "md:grid-cols-2 gap-0 md:divide-x divide-gray-200"}`}>
-                  {/* 왼쪽: 미션 정보 */}
-                  <div className="p-5 sm:p-6 space-y-3 bg-white">
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 mb-1.5">📋 미션 설명</p>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{m.description}</p>
-                    </div>
-                    {m.input_condition && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                        <p className="text-xs font-semibold text-blue-600 mb-1">📥 입력 조건</p>
-                        <p className="text-xs text-blue-800 whitespace-pre-wrap">{m.input_condition}</p>
-                      </div>
-                    )}
-                    {m.output_condition && (
-                      <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
-                        <p className="text-xs font-semibold text-purple-600 mb-1">📤 출력 조건</p>
-                        <p className="text-xs text-purple-800 whitespace-pre-wrap">{m.output_condition}</p>
-                      </div>
-                    )}
-                    {m.example && (
-                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                        <p className="text-xs font-semibold text-gray-500 mb-1">💡 예시</p>
-                        <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap">{m.example}</pre>
-                      </div>
-                    )}
-                    {m.expected_output && (
-                      <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                        <p className="text-xs font-semibold text-green-600 mb-1">✅ 예상 출력</p>
-                        <pre className="text-xs font-mono text-green-800">{m.expected_output}</pre>
-                      </div>
-                    )}
+            {!isCollapsed && (
+              <div className={`grid grid-cols-1 ${isExpanded ? "fixed inset-0 z-[9999] bg-white grid-cols-2 gap-0 divide-x divide-gray-200 pt-12 overflow-hidden" : "md:grid-cols-2 gap-0 md:divide-x divide-gray-200"}`}>
+                {isExpanded && <div className="absolute inset-x-0 top-0 h-12 bg-slate-900 text-white flex items-center justify-between px-4 z-10"><span className="font-semibold text-sm">예제 {idx + 1} · 전체 화면 (원본 코드 50% / 작성 코드 50%)</span><Button type="button" size="sm" variant="outline" className="bg-white text-slate-900" onClick={() => setExpandedEditors(v => ({ ...v, [idx]: false }))}><Minimize2 className="w-4 h-4 mr-1" />전체 화면 닫기</Button></div>}
+                {/* 원본 코드 */}
+                <div className={`p-4 ${isExpanded ? "min-w-0 h-full overflow-y-auto" : ""}`}>
+                  <div className="flex items-center justify-between gap-2 mb-2"><p className="text-xs font-semibold text-gray-500">📖 원본 코드</p><Button type="button" size="sm" variant="outline" onClick={() => setExpandedEditors(s => ({...s, [idx]: !s[idx]}))} className="gap-1 text-xs">{isExpanded ? <Minimize2 className="w-3.5 h-3.5"/> : <Maximize2 className="w-3.5 h-3.5"/>}{isExpanded ? "전체 화면 닫기" : "전체 화면"}</Button></div>
+                  <div
+                    className="rounded-lg p-4 font-mono text-sm whitespace-pre overflow-auto"
+                    style={{
+                      minHeight: isExpanded ? "65vh" : "160px",
+                      maxHeight: isExpanded ? "75vh" : "300px",
+                      backgroundColor: theme.example_code_bg || DEFAULT_THEME.example_code_bg,
+                      color: theme.example_code_text || DEFAULT_THEME.example_code_text,
+                      userSelect: "none", WebkitUserSelect: "none",
+                    }}
+                    onCopy={e => e.preventDefault()}
+                    onCut={e => e.preventDefault()}
+                    onContextMenu={e => e.preventDefault()}
+                  >
+                    {ec.code || "# 코드가 없습니다."}
                   </div>
-
-                  {/* 오른쪽: 코드 에디터 */}
-                  <div className="p-5 sm:p-6 flex flex-col gap-3 bg-white">
-                    <div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold text-gray-500">💻 코드 작성</p><Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setExpandedEditors(s => ({...s, [mNum]: !s[mNum]}))}>{expandedEditors[mNum] ? <Minimize2 className="w-3.5 h-3.5"/> : <Maximize2 className="w-3.5 h-3.5"/>}{expandedEditors[mNum] ? "기본 크기" : "크게 보기"}</Button></div>
-                    <PythonCodeEditor
-                      value={code}
-                      onChange={v => { setCodes(c => ({ ...c, [mNum]: v })); setRunResults(r => ({ ...r, [mNum]: null })); }}
-                      defaultCode={m.default_code || `print("Hello CODA")`}
-                      showRunButton={true}
-                      onRun={data => handleRun(mNum, data)}
-                      height={expandedEditors[mNum] ? "65vh" : "220px"}
-                      stdin={stdinInputs[mNum] || ""}
-                      onStdinChange={v => { setStdinInputs(s => ({ ...s, [mNum]: v })); setRunResults(r => ({ ...r, [mNum]: null })); }}
-                      defaultStdin={m.default_stdin || ""}
-                      stdinDescription={m.stdin_description || ""}
-                      forceShowStdin={m.uses_input === true}
+                  <div className="mt-2">
+                    <StdinInput
+                      value={stdinValues[idx] || ""}
+                      onChange={v => {
+                        setStdinValues(s => ({ ...s, [idx]: v }));
+                        setResults(r => ({ ...r, [idx]: null }));
+                      }}
+                      code={ec.code || ""}
+                      defaultStdin={ec.default_stdin || ""}
+                      description={ec.stdin_description || ""}
+                      forceShow={ec.uses_input === true}
                     />
-                    <Button onClick={() => handleSubmit(m, i, mNum)} disabled={submitting[mNum]}
-                      className={`gap-2 ${isCompleted ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700"}`}>
-                      {isCompleted
-                        ? <><CheckCircle2 className="w-4 h-4" />다시 제출하기</>
-                        : <><Send className="w-4 h-4" />{submitting[mNum] ? "제출 중..." : "제출하기"}</>}
-                    </Button>
-                    {sub && (
-                      <div className={`text-sm p-3 rounded-xl border font-semibold ${sub.isCorrect ? "bg-green-50 border-green-200 text-green-700" : "bg-yellow-50 border-yellow-200 text-yellow-700"}`}>
-                        {sub.isCorrect ? "🎉 정답! 미션 완료!" : "💡 예상 출력과 다릅니다. 다시 확인해 보세요."}
-                      </div>
-                    )}
-                    {runResult && m.expected_output && !sub && (
-                      <div className={`text-xs p-2.5 rounded-xl border font-semibold ${
-                        (runResult.output || "").trim() === m.expected_output.trim() && !runResult.error
-                          ? "bg-green-50 border-green-200 text-green-700"
-                          : "bg-yellow-50 border-yellow-200 text-yellow-700"
-                      }`}>
-                        {(runResult.output || "").trim() === m.expected_output.trim() && !runResult.error
-                          ? "🎉 예상 출력과 일치합니다!" : "💡 예상 출력과 다릅니다. 다시 확인해 보세요."}
-                      </div>
-                    )}
                   </div>
                 </div>
+
+                {/* 학생 에디터 */}
+                <div className={`p-4 ${isExpanded ? "min-w-0 h-full overflow-y-auto" : ""}`}>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">✏️ 직접 따라쓰기</p>
+                  <PythonCodeEditor
+                    value={studentCode}
+                    onChange={v => {
+                      setStudentCodes(c => ({ ...c, [idx]: v }));
+                      setResults(r => ({ ...r, [idx]: null }));
+                      saveCode(idx, v);
+                    }}
+                    defaultCode=""
+                    showRunButton={false}
+                    height={isExpanded ? "70vh" : "160px"}
+                    bgColor={theme.student_code_bg}
+                    textColor={theme.student_code_text}
+                    hideStdin
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" onClick={() => handleRun(idx, ec)} disabled={isRunning || isSubmitting}
+                      className="gap-1.5 bg-green-600 hover:bg-green-700 text-white">
+                      <Play className="w-3.5 h-3.5" />
+                      {isRunning ? "실행 중..." : "실행"}
+                    </Button>
+                    <Button size="sm" onClick={() => handleSubmit(idx, ec)} disabled={isRunning || isSubmitting}
+                      className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
+                      <Send className="w-3.5 h-3.5" />
+                      {isSubmitting ? "제출 중..." : "제출"}
+                    </Button>
+                    <Button size="sm" variant="outline"
+                      onClick={() => {
+                        setStudentCodes(c => ({ ...c, [idx]: "" }));
+                        setResults(r => ({ ...r, [idx]: null }));
+                        saveCode(idx, "");
+                        saveResult(idx, {});
+                      }}>
+                      <RefreshCw className="w-3.5 h-3.5" />초기화
+                    </Button>
+                  </div>
+
+                  {result && (
+                    <div className="mt-2 space-y-2">
+                      <div className="rounded-lg border p-2 text-xs font-mono"
+                        style={{ backgroundColor: theme.result_bg || DEFAULT_THEME.result_bg, color: theme.result_text || DEFAULT_THEME.result_text }}>
+                        <p className={`text-xs font-semibold mb-1 font-sans ${result.error ? "text-red-400" : "text-green-400"}`}>
+                          {result.error ? "❌ 에러" : "✅ 실행 결과"}
+                        </p>
+                        <pre className="whitespace-pre-wrap">{result.error || result.output || "(출력 없음)"}</pre>
+                      </div>
+                      {result.matchStatus && result.matchStatus !== "none" && (
+                        <div className={`flex items-center gap-2 p-2.5 rounded-lg text-sm font-semibold ${
+                          result.matchStatus === "match" ? "bg-green-50 text-green-700 border border-green-200"
+                          : result.matchStatus === "error" ? "bg-red-50 text-red-700 border border-red-200"
+                          : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                        }`}>
+                          {result.matchStatus === "match" && <><CheckCircle2 className="w-4 h-4" />확인되었습니다 ✅</>}
+                          {result.matchStatus === "mismatch" && <><XCircle className="w-4 h-4" />결과가 다릅니다. 다시 확인해 주세요.</>}
+                          {result.matchStatus === "error" && <><XCircle className="w-4 h-4" />에러가 발생했습니다.</>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </Collapsible>
+            )}
           </div>
         );
       })}
