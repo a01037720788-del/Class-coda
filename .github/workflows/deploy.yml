@@ -37,6 +37,7 @@ jobs:
         env:
           CODA_TARGET: github-pages
           VITE_BASE_PATH: /Class-coda/
+          VITE_SHEETS_API_URL: ${{ vars.VITE_SHEETS_API_URL }}
         run: npm run build
 
       - name: Setup Pages
