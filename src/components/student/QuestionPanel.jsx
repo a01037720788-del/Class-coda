@@ -605,6 +605,12 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
 
   const getSid = () => user?.student_id;
   const toggle = (i) => setOpenIdx(prev => prev === i ? null : i);
+  const startRetry = (i) => {
+    setRetrying(prev => ({ ...prev, [i]: true }));
+    setRetryVersion(prev => ({ ...prev, [i]: (prev[i] || 0) + 1 }));
+    setOpenIdx(i);
+    setSaveError(null);
+  };
 
   const handleSubmit = async (qIdx, qNum, qType, answer, isCorrect) => {
     // 1. 정답 판정 UI 먼저 표시 (DB 저장 실패와 무관하게 화면에 결과 표시)
@@ -792,8 +798,19 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
                   return <p className="text-sm text-gray-800 whitespace-pre-wrap font-medium">{displayQ}</p>;
                 })()}
 
-                {/* 유형별 입력 */}
-                {renderQuestion(q, i, state, isCompleted)}
+                {/* 완료 후 다시 풀기: 기존 완료 기록은 그대로 유지 */}
+                {isCompleted && !retrying[i] && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => startRetry(i)}>
+                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />다시 풀기
+                  </Button>
+                )}
+                {retrying[i] && (
+                  <p className="text-xs text-blue-600">다시 풀기 중입니다. 이전 완료 기록은 유지됩니다.</p>
+                )}
+                {/* 입력 컴포넌트를 새로 생성하여 기존 답안 상태 초기화 */}
+                <React.Fragment key={`${unitId}-${i}-${retryVersion[i] || 0}`}>
+                  {renderQuestion(q, i, state, isCompleted)}
+                </React.Fragment>
 
                 {/* 해설 */}
                 {isCompleted && q.explanation && (
