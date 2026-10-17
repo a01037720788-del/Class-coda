@@ -618,7 +618,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
     setSaveError(null);
 
     // 주관식이거나 오답이거나 이미 완료된 문제는 DB 저장하지 않음
-    if (isCorrect === null || !isCorrect || alreadyCompleted) return;
+    if (isCorrect === null) return;
 
     // 세션 토큰 사전 확인 — 없으면 401이 아니라 명확한 메시지
     if (!getSessionToken()) {
@@ -637,7 +637,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
       try {
         await saveQuestionResult(sid, unitId, qNum, {
           answer,
-          is_correct: true,
+          is_correct: isCorrect === true,
           question_type: qType,
         }, { studentName: user?.name || "", unitTitle: unitTitle || "", unitType }, {
           completed_question_ids: newCompleted,

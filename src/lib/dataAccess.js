@@ -340,7 +340,8 @@ const PROGRESS_ONLY_FIELDS = [
   "completed_example_ids", "completed_question_ids", "completed_mission_ids",
   "current_example_index", "current_question_index", "current_mission_index",
   "example_progress_rate", "question_progress_rate", "mission_progress_rate",
-  "is_unit_completed", "is_completed", "completed", "last_studied_at", "memo"
+  "is_unit_completed", "is_completed", "completed", "last_studied_at", "memo",
+  "latest_question_answers", "latest_mission_codes"
 ];
 
 export async function saveProgress(studentId, unitId, data, context = {}) {
@@ -434,9 +435,8 @@ export async function loadMissionSubmissions(studentId, unitId) {
 }
 // 제출 이력은 저장하지 않습니다. 정답으로 제출된 항목의 ID만 StudentProgress에 저장합니다.
 // 화면에서 사용하는 기존 함수 시그니처는 유지합니다.
-async function saveCompletedItem(studentId, unitId, type, index, isCorrect, context, progressUpdate) {
+async function saveCompletedItem(studentId, unitId, type, index, isCorrect, context, progressUpdate, submission = null) {
   assertOwnStudent(studentId);
-  if (!isCorrect) return { saved: false, reason: "incorrect" };
   const subject = await resolveSubject(unitId, context);
   const units = await loadUnitsFromRepo(subject);
   const unit = units.find(u => String(u.id) === String(unitId));
@@ -444,16 +444,21 @@ async function saveCompletedItem(studentId, unitId, type, index, isCorrect, cont
   const count = type === "example" ? (unit.example_codes?.length || 0)
     : type === "question" ? (unit.questions?.length || 0) : (unit.missions?.length || 0);
   const idx = Number(index);
-  if (!Number.isInteger(idx) || idx < 0 || idx >= count) {
-    throw new Error(`잘못된 ${type} 항목 번호입니다: ${index}`);
-  }
+  if (!Number.isInteger(idx) || idx < 0 || idx >= count) throw new Error(`잘못된 ${type} 항목 번호입니다: ${index}`);
+  if (!isCorrect && !submission) return { saved: false, reason: "incorrect" };
   const existing = await loadProgress(studentId, unitId);
   const key = `completed_${type}_ids`;
   const current = normalizedIds(existing?.[key], count);
-  // progressUpdate는 UI가 계산한 다른 항목의 완료 ID를 담을 수 있어 병합합니다.
   const incoming = normalizedIds(asObject(progressUpdate)[key], count);
-  const ids = [...new Set([...current, ...incoming, idx])].sort((a, b) => a - b);
-  await saveProgress(studentId, unitId, { [key]: ids }, context);
+  const ids = isCorrect ? [...new Set([...current, ...incoming, idx])].sort((a, b) => a - b) : current;
+  const update = { [key]: ids };
+  // One compact latest submission per item, not a growing attempt history.
+  if (submission && (type === "question" || type === "mission")) {
+    const field = type === "question" ? "latest_question_answers" : "latest_mission_codes";
+    const old = asObject(existing?.[field]);
+    update[field] = { ...old, [String(idx)]: submission };
+  }
+  await saveProgress(studentId, unitId, update, context);
   return { saved: true, completed_ids: ids };
 }
 export async function saveExamplePractice(studentId, unitId, exampleIndex, data, context = {}, progressUpdate = null) {
@@ -464,7 +469,11 @@ export async function saveQuestionResult(studentId, unitId, questionNumber, data
   const units = await loadUnitsFromRepo(subject);
   const unit = units.find(u => String(u.id) === String(unitId));
   const index = unit?.questions?.findIndex((q, i) => Number(q.number || i + 1) === Number(questionNumber)) ?? -1;
-  return saveCompletedItem(studentId, unitId, "question", index, data?.is_correct === true, context, progressUpdate);
+  return saveCompletedItem(studentId, unitId, "question", index, data?.is_correct === true, context, progressUpdate, {
+    answer: String(data?.answer ?? "").slice(0, 1500),
+    correct: data?.is_correct === true,
+    at: new Date().toISOString(),
+  });
 }
 export async function saveMissionSubmission(studentId, unitId, missionNumber, data, context = {}, progressUpdate = null) {
   const subject = await resolveSubject(unitId, context);
@@ -474,7 +483,11 @@ export async function saveMissionSubmission(studentId, unitId, missionNumber, da
   // 기존 MissionPanel은 정답이면서 테스트케이스가 없고 expected 출력도 없으면 통과 처리합니다.
   // 서버 진도 저장은 실제 정답 판정에 따라 수행합니다.
   // progressUpdate 유무로 정답 여부를 판단하면 재제출 시 저장이 누락될 수 있습니다.
-  return saveCompletedItem(studentId, unitId, "mission", index, data?.is_correct === true, context, progressUpdate);
+  return saveCompletedItem(studentId, unitId, "mission", index, data?.is_correct === true, context, progressUpdate, {
+    code: String(data?.submitted_code ?? "").slice(0, 12000),
+    correct: data?.is_correct === true,
+    at: new Date().toISOString(),
+  });
 }
 
 // ─── 학생 전용 학습 컨텍스트 (Base44 Entity 직접 조회) ───
