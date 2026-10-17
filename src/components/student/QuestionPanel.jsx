@@ -593,7 +593,12 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
   const [openIdx, setOpenIdx] = useState(null);
   const [showCompleted, setShowCompleted] = useState(true);
   const [saveError, setSaveError] = useState(null);
-  const completedIds = progress?.completed_question_ids || [];
+  // 서버 진도와 현재 화면에서 정답 처리한 결과를 함께 반영합니다.
+  // 저장된 ID는 숫자/문자열 형태 모두 허용합니다.
+  const completedIds = (Array.isArray(progress?.completed_question_ids)
+    ? progress.completed_question_ids : []).map(Number).filter(Number.isFinite);
+  const isQuestionCompleted = (i) =>
+    completedIds.includes(i) || submitted[i]?.isCorrect === true;
 
   const getSid = () => user?.student_id;
   const toggle = (i) => setOpenIdx(prev => prev === i ? null : i);
@@ -607,7 +612,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
     setSaveError(null);
 
     // 주관식이거나 오답이거나 이미 완료된 문제는 DB 저장하지 않음
-    if (isCorrect === null || !isCorrect || completedIds.includes(qIdx)) return;
+    if (isCorrect === null || !isCorrect || isQuestionCompleted(qIdx)) return;
 
     // 세션 토큰 사전 확인 — 없으면 401이 아니라 명확한 메시지
     if (!getSessionToken()) {
@@ -616,7 +621,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
     }
 
     // 2. Progress / Submission 저장 (정답 판정과 분리 — 실패해도 UI 결과는 유지)
-    const newCompleted = [...completedIds, qIdx];
+    const newCompleted = [...new Set([...completedIds, ...Object.keys(next).filter(k => next[k]?.isCorrect === true).map(Number)])];
     const total = questions.length;
     const rate = total > 0 ? (newCompleted.length / total) * 100 : 0;
     const sid = getSid();
@@ -680,7 +685,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
     return <p className="text-gray-400 text-sm text-center py-8">Question이 없습니다.</p>;
   }
 
-  const completedCount = completedIds.length;
+  const completedCount = questions.filter((_, i) => isQuestionCompleted(i)).length;
   const totalCount = questions.length;
 
   return (
@@ -705,7 +710,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
       {questions.map((q, i) => {
         const qNum = q.number || i + 1;
         const nt = normalizeType(q.type);
-        const isCompleted = completedIds.includes(i);
+        const isCompleted = isQuestionCompleted(i);
         const state = submitted[i];
         const isPending = nt === "주관식" && state?.isCorrect === null && state?.done;
         const isWrong = state?.isCorrect === false;
