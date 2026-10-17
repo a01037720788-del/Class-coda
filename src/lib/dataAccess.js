@@ -300,7 +300,7 @@ function normalizeProgress(r) {
   };
 }
 function normalizeSubmission(r, type) {
-  const d = asObject(r.data);
+  const d = asObject(typeof r.data === "string" ? (() => { try { return JSON.parse(r.data); } catch { return {}; } })() : r.data);
   const num = type === "question" ? r.item_number : r.mission_number;
   return {
     ...d,
@@ -471,11 +471,9 @@ export async function saveMissionSubmission(studentId, unitId, missionNumber, da
   const units = await loadUnitsFromRepo(subject);
   const unit = units.find(u => String(u.id) === String(unitId));
   const index = unit?.missions?.findIndex((m, i) => Number(m.number || i + 1) === Number(missionNumber)) ?? -1;
-  // 기존 MissionPanel은 정답이면서 테스트케이스가 없고 expected 출력도 없으면 통과 처리합니다.
-  const isCorrect = data?.is_correct === true || progressUpdate !== null;
-  // 임의 출력만으로 완료를 인정하지 않도록, 화면이 넘긴 진도 업데이트가 있을 때만 저장합니다.
-  if (!progressUpdate) return { saved: false, reason: "not_completed" };
-  return saveCompletedItem(studentId, unitId, "mission", index, isCorrect, context, progressUpdate);
+  // 채점 결과가 정답이면 progressUpdate 유무와 관계없이 완료 ID를 저장합니다.
+  // progressUpdate는 화면의 추가 상태이며 정답 판정에 사용하지 않습니다.
+  return saveCompletedItem(studentId, unitId, "mission", index, data?.is_correct === true, context, progressUpdate);
 }
 
 // ─── 학생 전용 학습 컨텍스트 (Base44 Entity 직접 조회) ───
