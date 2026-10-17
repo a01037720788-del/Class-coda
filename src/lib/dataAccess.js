@@ -78,21 +78,22 @@ const UNIT_ENTITY_MAP = {
 };
 
 // ─── Unit 로드 (학생용 — 활성 Unit만) ──────────────────────────
+
 export async function loadUnits(subjectType, { metadataOnly = false } = {}) {
-  const entityName = UNIT_ENTITY_MAP[subjectType];
-  if (!entityName || !base44.entities[entityName]) return [];
   try {
-    const items = await base44.entities[entityName].filter({ is_active: true }, "unit_number", 5000);
-    return items.map((u) => ({
-      ...u,
+    const units = await loadActiveUnitsFromRepo(subjectType);
+    return units.map((unit) => ({
+      ...unit,
       subject_type: subjectType,
-      _source: "base44",
+      _source: "repo",
     }));
   } catch (err) {
-    console.warn(`[dataAccess] loadUnits(${subjectType}) 실패:`, err.message);
+    console.error(`[dataAccess] loadUnits(${subjectType}) 실패:`, err);
     return [];
   }
 }
+
+
 
 // ─── Generic Units (algorithm, other 등) ─────
 export async function loadGenericUnits(subjectType, subjectId) {
