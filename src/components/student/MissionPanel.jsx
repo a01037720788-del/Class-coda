@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { runPython } from "@/lib/codeRunner";
 import { saveMissionSubmission } from "@/lib/dataAccess";
 import { Button } from "@/components/ui/button";
-import { Send, CheckCircle2, ChevronDown, ChevronUp, ChevronsUpDown, Circle } from "lucide-react";
+import { Send, CheckCircle2, ChevronDown, ChevronUp, ChevronsUpDown, Circle, Maximize2, Minimize2 } from "lucide-react";
 import PythonCodeEditor from "./PythonCodeEditor";
 import { useToast } from "@/components/ui/use-toast";
 import { getSessionToken } from "@/lib/auth";
@@ -21,6 +21,7 @@ function saveMissionToDisk(unitId, mNum, data) {
 // ─── 애니메이션 래퍼 ──────────────────────────────────────────────────────────
 function Collapsible({ open, children }) {
   const ref = useRef(null);
+  const [expandedEditors, setExpandedEditors] = useState({});
   const [height, setHeight] = useState(open ? "auto" : "0px");
   const [visible, setVisible] = useState(open);
 
@@ -305,7 +306,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
             {/* 펼쳐지는 본문 — 애니메이션 */}
             <Collapsible open={isOpen}>
               <div className="border-t border-gray-100">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:divide-x divide-gray-200">
+                <div className={`grid grid-cols-1 ${expandedEditors[mNum] ? "gap-2" : "md:grid-cols-2 gap-0 md:divide-x divide-gray-200"}`}>
                   {/* 왼쪽: 미션 정보 */}
                   <div className="p-5 sm:p-6 space-y-3 bg-white">
                     <div>
@@ -340,14 +341,14 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
 
                   {/* 오른쪽: 코드 에디터 */}
                   <div className="p-5 sm:p-6 flex flex-col gap-3 bg-white">
-                    <p className="text-xs font-semibold text-gray-500">💻 코드 작성</p>
+                    <div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold text-gray-500">💻 코드 작성</p><Button type="button" size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setExpandedEditors(s => ({...s, [mNum]: !s[mNum]}))}>{expandedEditors[mNum] ? <Minimize2 className="w-3.5 h-3.5"/> : <Maximize2 className="w-3.5 h-3.5"/>}{expandedEditors[mNum] ? "기본 크기" : "크게 보기"}</Button></div>
                     <PythonCodeEditor
                       value={code}
                       onChange={v => { setCodes(c => ({ ...c, [mNum]: v })); setRunResults(r => ({ ...r, [mNum]: null })); }}
                       defaultCode={m.default_code || `print("Hello CODA")`}
                       showRunButton={true}
                       onRun={data => handleRun(mNum, data)}
-                      height="220px"
+                      height={expandedEditors[mNum] ? "65vh" : "220px"}
                       stdin={stdinInputs[mNum] || ""}
                       onStdinChange={v => { setStdinInputs(s => ({ ...s, [mNum]: v })); setRunResults(r => ({ ...r, [mNum]: null })); }}
                       defaultStdin={m.default_stdin || ""}

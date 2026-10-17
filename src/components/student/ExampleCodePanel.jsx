@@ -3,7 +3,7 @@ import { runPython } from "@/lib/codeRunner";
 import { saveExamplePractice } from "@/lib/dataAccess";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, RefreshCw, CheckCircle2, XCircle, ChevronDown, ChevronUp, Eye, Send } from "lucide-react";
+import { Play, RefreshCw, CheckCircle2, XCircle, ChevronDown, ChevronUp, Eye, Send, Maximize2, Minimize2 } from "lucide-react";
 import PythonCodeEditor from "./PythonCodeEditor";
 import { useTheme, DEFAULT_THEME } from "@/hooks/useTheme";
 import { storageKeys, storageSave, storageLoad } from "@/lib/storageService";
@@ -27,6 +27,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
   const [showCompleted, setShowCompleted] = useState(true);
   const [localCompleted, setLocalCompleted] = useState([]);
   const [stdinValues, setStdinValues] = useState({});
+  const [expandedEditors, setExpandedEditors] = useState({});
 
   const sid = user?.student_id;
   const { theme } = useTheme(sid);
@@ -272,6 +273,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
         const isCollapsed = collapsed[idx] ?? false;
         const isRunning = !!running[idx];
         const isSubmitting = !!submitting[idx];
+        const isExpanded = !!expandedEditors[idx];
 
         if (isCompleted && !showCompleted) return null;
 
@@ -294,14 +296,15 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
             </div>
 
             {!isCollapsed && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:divide-x divide-gray-200">
+              <div className={`grid grid-cols-1 ${isExpanded ? "gap-2" : "md:grid-cols-2 gap-0 md:divide-x divide-gray-200"}`}>
                 {/* 원본 코드 */}
                 <div className="p-4">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">📖 원본 코드</p>
+                  <div className="flex items-center justify-between gap-2 mb-2"><p className="text-xs font-semibold text-gray-500">📖 원본 코드</p><Button type="button" size="sm" variant="outline" onClick={() => setExpandedEditors(s => ({...s, [idx]: !s[idx]}))} className="gap-1 text-xs">{isExpanded ? <Minimize2 className="w-3.5 h-3.5"/> : <Maximize2 className="w-3.5 h-3.5"/>}{isExpanded ? "기본 크기" : "크게 보기"}</Button></div>
                   <div
                     className="rounded-lg p-4 font-mono text-sm whitespace-pre overflow-auto"
                     style={{
-                      minHeight: "160px",
+                      minHeight: isExpanded ? "40vh" : "160px",
+                      maxHeight: isExpanded ? "65vh" : "300px",
                       backgroundColor: theme.example_code_bg || DEFAULT_THEME.example_code_bg,
                       color: theme.example_code_text || DEFAULT_THEME.example_code_text,
                       userSelect: "none", WebkitUserSelect: "none",
@@ -339,7 +342,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
                     }}
                     defaultCode=""
                     showRunButton={false}
-                    height="160px"
+                    height={isExpanded ? "55vh" : "160px"}
                     bgColor={theme.student_code_bg}
                     textColor={theme.student_code_text}
                     hideStdin
