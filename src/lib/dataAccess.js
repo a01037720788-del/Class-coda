@@ -3,7 +3,7 @@
 // 모든 데이터는 Base44 Entity를 통해 접근합니다. Supabase 의존성 완전 제거.
 // 학생/과목/수강관리는 base44AdminAction 백엔드 함수 사용.
 // Unit/진도/제출 데이터는 Base44 Entity 직접 조회.
-
+import { loadActiveUnitsFromRepo } from "./unitsRepo";
 import { base44 } from "@/api/base44Client";
 import { getSessionToken, getSessionUser } from "./auth";
 import { extractFunctionError } from "./errorUtils";
