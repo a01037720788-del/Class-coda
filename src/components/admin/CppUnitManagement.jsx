@@ -49,7 +49,7 @@ const TABS = [
 
 export default function CppUnitManagement() {
   const [units, setUnits] = useState([]);
-  const [dataSource, setDataSource] = useState("base44");
+  const [dataSource, setDataSource] = useState("github-json+google-sheets-overrides");
   const [showForm, setShowForm] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
   const [form, setForm] = useState(emptyForm(0));
@@ -133,10 +133,10 @@ export default function CppUnitManagement() {
     };
     try {
       if (editingUnit) {
-        await saveUnit({ ...saveData, id: editingUnit.id, subject_type: "cpp" });
+        await saveUnit("cpp", { ...saveData, id: editingUnit.id, subject_type: "cpp" });
         toast({ title: "수정 완료", description: `Unit ${saveData.unit_number}. ${saveData.title}` });
       } else {
-        await saveUnit({ ...saveData, subject_type: "cpp" });
+        await saveUnit("cpp", { ...saveData, id: `cpp-unit-${saveData.unit_number}-${Date.now()}`, subject_type: "cpp" });
         toast({ title: "Unit 추가 완료", description: `Unit ${saveData.unit_number}. ${saveData.title}` });
       }
       await loadUnits();
@@ -158,63 +158,20 @@ export default function CppUnitManagement() {
   };
 
   const handleDelete = async (unit) => {
-    if (!confirm(`Unit ${unit.unit_number}. ${unit.title}을 삭제하시겠습니까?\n관련 진도 및 제출 기록도 함께 삭제됩니다.`)) return;
+    if (!confirm(`Unit ${unit.unit_number}. ${unit.title}을 학생 화면에서 숨기시겠습니까? 학습 기록은 유지됩니다.`)) return;
     try {
-      // _source에 따라 실제 데이터 출처에서 삭제
-      await deleteUnit(unit);
-      await Promise.all([
-        deleteProgressByUnit(unit.id),
-        deleteSubmissionsByUnit(unit.id),
-      ]);
-      toast({ title: "삭제 완료 (관련 진도 및 제출 기록도 함께 삭제되었습니다)" });
-    } catch (err) {
-      toast({ title: "삭제 실패", description: err.message, variant: "destructive" });
-    }
-    loadUnits();
+      await saveUnit("cpp", { ...unit, is_active: false });
+      toast({ title: "단원 숨김 완료", description: "학생 학습 기록은 유지됩니다." });
+      await loadUnits();
+    } catch (err) { toast({ title: "숨김 실패", description: err.message, variant: "destructive" }); }
   };
 
   const handleDeleteAll = async () => {
-    if (units.length === 0 || deletingAll) return;
-    // 1단계 확인
-    if (!confirm(`C++ Unit ${units.length}개를 모두 삭제하시겠습니까?`)) return;
-    // 2단계 확인
-    const confirmed = confirm(
-      "이 작업은 되돌릴 수 없습니다.\nC++ Unit과 관련 학습 기록이 모두 삭제됩니다.\n\n계속하려면 [확인]을 눌러주세요."
-    );
-    if (!confirmed) return;
-
-    setDeletingAll(true);
-    try {
-      const result = await deleteUnitsBySubject("cpp");
-      if (!result?.success) {
-        throw new Error(result?.error || "삭제 실패");
-      }
-
-      // 삭제 후 재조회하여 확인
-      await loadUnits();
-      const { units: remaining } = await loadAllUnitsWithSource("cpp");
-
-      if (remaining.length === 0) {
-        toast({
-          title: "전체 삭제 완료",
-          description: `Base44: ${result.base44UnitsDeleted || 0}개, 진도: ${result.progressDeleted}건, 제출: ${result.submissionsDeleted}건 삭제됨`,
-        });
-      } else {
-        toast({
-          title: "C++ Unit 일부가 삭제되지 않았습니다",
-          description: `${remaining.length}개 Unit이 남아있습니다. 다시 시도해주세요.`,
-          variant: "destructive",
-        });
-      }
-    } catch (err) {
-      toast({ title: "전체 삭제 실패", description: err.message, variant: "destructive" });
-    } finally {
-      setDeletingAll(false);
-    }
+    toast({ title: "전체 삭제 차단", description: "학생 학습 기록 보호를 위해 전체 삭제 기능은 지원하지 않습니다.", variant: "destructive" });
   };
 
   const toggleActive = async (u) => {
-    await toggleUnitActive(u.id, !u.is_active);
+    await saveUnit("cpp", { ...u, is_active: !(u.is_active !== false) });
     loadUnits();
   };
 

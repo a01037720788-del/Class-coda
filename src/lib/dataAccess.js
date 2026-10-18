@@ -124,7 +124,7 @@ export async function loadAllUnitsWithSource(subjectType) {
 // ─── 단일 Unit 전체 콘텐츠 로드 (수정 화면용) ─────────────────
 export async function loadUnitContent(unitId) {
   for (const type of ["python", "junior_python", "cpp"]) {
-    const units = await loadUnitsFromRepo(type);
+    const units = await loadAllUnits(type);
     const unit = units.find(u => String(u.id) === String(unitId));
     if (unit) return unit;
   }
@@ -133,6 +133,7 @@ export async function loadUnitContent(unitId) {
 
 export async function saveUnit(subjectType, unit) {
   if (!["python", "junior_python", "cpp"].includes(subjectType)) throw new Error("지원하지 않는 과목입니다.");
+  if (!unit?.id || !String(unit.title || "").trim()) throw new Error("단원 ID와 제목이 필요합니다.");
   return adminSaveUnitOverride(subjectType, unit);
 }
 

@@ -33,7 +33,7 @@ const emptyUnit = () => ({
 
 export default function JuniorPythonUnitManagement() {
   const [units, setUnits] = useState([]);
-  const [dataSource, setDataSource] = useState("base44");
+  const [dataSource, setDataSource] = useState("github-json+google-sheets-overrides");
   const [showForm, setShowForm] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
   const [form, setForm] = useState(emptyUnit());
@@ -63,34 +63,33 @@ export default function JuniorPythonUnitManagement() {
   };
 
   const handleSave = async () => {
-    if (!form.title.trim()) { toast({ title: "오류", description: "Unit 제목을 입력해주세요.", variant: "destructive" }); return; }
+    if (!form.title?.trim()) { toast({ title: "오류", description: "Unit 제목을 입력해주세요.", variant: "destructive" }); return; }
     setSaving(true);
-    if (editingUnit) {
-      await saveUnit({ ...form, id: editingUnit.id, subject_type: "junior_python" });
-      toast({ title: "수정 완료" });
-    } else {
-      await saveUnit({ ...form, subject_type: "junior_python" });
-      toast({ title: "등록 완료" });
-    }
-    setShowForm(false);
-    setSaving(false);
-    loadUnits();
+    try {
+      const unit = { ...form, subject_type: "junior_python", id: editingUnit?.id || `junior_python-unit-${form.unit_number}-${Date.now()}` };
+      await saveUnit("junior_python", unit);
+      toast({ title: editingUnit ? "수정 완료" : "등록 완료" });
+      setShowForm(false);
+      await loadUnits();
+    } catch (err) {
+      toast({ title: "저장 실패", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   const handleDelete = async (unit) => {
-    if (!confirm(`"${unit.title}" Unit을 삭제하시겠습니까?`)) return;
-    await Promise.all([
-      deleteUnit(unit.id),
-      deleteProgressByUnit(unit.id),
-      deleteSubmissionsByUnit(unit.id),
-    ]);
-    toast({ title: "삭제 완료" });
-    loadUnits();
+    if (!confirm(`"${unit.title}" Unit을 학생 화면에서 숨기시겠습니까? 학습 기록은 삭제되지 않습니다.`)) return;
+    try {
+      await saveUnit("junior_python", { ...unit, is_active: false });
+      toast({ title: "단원 숨김 완료", description: "기존 학생 학습 기록은 유지됩니다." });
+      await loadUnits();
+    } catch (err) { toast({ title: "숨김 실패", description: err.message, variant: "destructive" }); }
   };
 
   const handleToggleActive = async (unit) => {
-    await toggleUnitActive(unit.id, !unit.is_active);
-    loadUnits();
+    try {
+      await saveUnit("junior_python", { ...unit, is_active: !(unit.is_active !== false) });
+      await loadUnits();
+    } catch (err) { toast({ title: "변경 실패", description: err.message, variant: "destructive" }); }
   };
 
   const handleAIApply = (field, value) => {
