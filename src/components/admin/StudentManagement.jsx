@@ -318,42 +318,11 @@ export default function StudentManagement() {
         try { await updateStudent(editingStudent.id, saveData); }
         catch (err) { throw new Error(`학생 정보 저장 실패: ${err?.message || err}`); }
 
-        try {
-          const allUsers = await listAppUsers();
-          const appUser = (allUsers || []).find(u => u.student_id === editingStudent.id);
-          if (appUser) {
-            const updateData = { name: form.name };
-            if (form.login_id) updateData.login_id = form.login_id;
-            await updateAppUser(appUser.id, updateData);
-          }
-        } catch (err) { throw new Error(`로그인 계정 수정 실패: ${err?.message || err}`); }
-
-        if (form.parent_phone) {
-          try { await upsertParentAccount(editingStudent.id, form.name, form.parent_phone); }
-          catch (err) { throw new Error(`학부모 계정 처리 실패: ${err?.message || err}`); }
-        }
-
-        for (const subjectName of form.subjects) {
-          const paid = (form.paidLessons || {})[subjectName] || 0;
-          const existing = editingEnrollments.find(e => e.subject_name === subjectName);
-          const subj = subjects.find(s => s.name === subjectName);
-          if (existing) {
-            const newRemaining = paid - (existing.completed_lessons || 0);
-            try {
-              await updateEnrollment(existing.id, {
-                paid_lessons: paid, remaining_lessons: newRemaining, repayment_needed: newRemaining <= 0,
-              });
-            } catch (err) { throw new Error(`수강 정보 수정 실패 (${subjectName}): ${err?.message || err}`); }
-          } else if (paid > 0) {
-            try {
-              await createEnrollment({
-                id: crypto.randomUUID(),
-                student_id: editingStudent.id, student_name: form.name,
-                subject_id: subj?.id || "", subject_name: subjectName,
-                paid_lessons: paid, completed_lessons: 0, remaining_lessons: paid, repayment_needed: false,
-              });
-            } catch (err) { throw new Error(`수강 정보 저장 실패 (${subjectName}): ${err?.message || err}`); }
-          }
+        // CODA_005: 로그인 계정은 Students 행에서 함께 갱신합니다.
+        // Base44의 학부모 계정/수강권 수정 API는 호출하지 않습니다.
+        if (form.password) {
+          const { adminResetStudentPassword } = await import("@/lib/sheetsApi");
+          await adminResetStudentPassword(editingStudent.student_id || editingStudent.id, form.password);
         }
         toast({ title: "수정 완료", description: "학생 정보가 수정되었습니다." });
       } else {

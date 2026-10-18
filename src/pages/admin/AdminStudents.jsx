@@ -72,19 +72,11 @@ export default function AdminStudents() {
           is_active: form.is_active,
         });
 
-        const appUser = appUsers.find(u => u.student_id === editing.id);
-        if (appUser) {
-          const upd = {};
-          if (appUser.login_id !== form.login_id) upd.login_id = form.login_id;
-          if (appUser.name !== form.name) upd.name = form.name;
-          if (appUser.is_active !== form.is_active) upd.is_active = form.is_active;
-          if (form.newPassword) upd.password = form.newPassword;
-          if (Object.keys(upd).length) await updateAppUser(appUser.id, upd);
-        } else if (form.login_id && form.newPassword) {
-          await base44.functions.invoke("createStudentLoginAccount", {
-            caller_login_id, student_id: editing.id,
-            login_id: form.login_id, password: form.newPassword,
-          });
+        // 학생 계정은 Students 시트의 같은 행에 저장됩니다.
+        // Base44 계정 API를 별도로 호출하지 않습니다.
+        if (form.newPassword) {
+          const { adminResetStudentPassword } = await import("@/lib/sheetsApi");
+          await adminResetStudentPassword(editing.student_id || editing.id, form.newPassword);
         }
         toast({ title: "수정 완료", description: `${form.name} 학생 정보가 저장되었습니다.` });
       } else {
