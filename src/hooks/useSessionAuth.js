@@ -45,7 +45,7 @@ export function useSessionAuth() {
 
         const verifiedUser = toSessionUser(student);
 
-        if (!verifiedUser?.student_id) {
+        if (!verifiedUser?.student_id && verifiedUser?.role !== "admin") {
           clearSession();
           setUser(null);
           return;

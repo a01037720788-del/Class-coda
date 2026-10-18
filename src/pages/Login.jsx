@@ -7,6 +7,7 @@ import { login as loginWithSheets, getToken, validateSession } from "@/lib/sheet
 import { appPath } from "@/lib/basePath";
 
 const STUDENT_HOME = "/student/home";
+const homeFor = user => user?.role === "admin" ? "/admin/students" : STUDENT_HOME;
 
 // 서버(Apps Script) 응답 코드 → 학생 안내 문구
 function loginErrorMessage(err) {
@@ -52,7 +53,7 @@ export default function Login() {
         if (cancelled) return;
         if (student) {
           setSessionUser(toSessionUser(student));
-          window.location.href = appPath(STUDENT_HOME);
+          window.location.href = appPath(homeFor(toSessionUser(student)));
         } else {
           clearSession();            // 만료 · 로그아웃 · 비활성 계정
         }
@@ -83,7 +84,7 @@ export default function Login() {
       // 검증에 성공했을 때만 검증 가능한 세션 토큰을 발급합니다.
       const student = await loginWithSheets(loginId, password);
       const sessionUser = toSessionUser(student);
-      if (!sessionUser?.student_id) throw new Error("STUDENT_ID_NOT_LINKED");
+      if (!sessionUser?.student_id && sessionUser?.role !== "admin") throw new Error("STUDENT_ID_NOT_LINKED");
 
       setSessionToken(getToken());     // 서버가 발급한 토큰 (클라이언트 생성 토큰 사용 안 함)
       setSessionUser(sessionUser);     // 해시 · 솔트는 내려오지 않습니다
@@ -95,7 +96,7 @@ export default function Login() {
         localStorage.removeItem("coda_remember_id");
       }
 
-      window.location.href = appPath(STUDENT_HOME);   // 로그인 성공 → 학생 홈
+      window.location.href = appPath(homeFor(toSessionUser(student)));   // 로그인 성공 → 학생 홈
     } catch (err) {
       setError(loginErrorMessage(err));
     } finally {

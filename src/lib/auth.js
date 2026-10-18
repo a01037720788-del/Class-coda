@@ -96,7 +96,7 @@ export function isParent(user) {
 export function toSessionUser(student) {
   if (!student) return null;
   return {
-    role: 'student',
+    role: student.role === 'admin' ? 'admin' : 'student',
     student_id: student.student_id || '',
     login_id: student.login_id || '',
     name: student.name || '',
