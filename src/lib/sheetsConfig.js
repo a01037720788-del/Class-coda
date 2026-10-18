@@ -10,4 +10,4 @@
  * ※ 이 주소는 브라우저 번들에 포함되므로 비밀로 취급하지 않습니다.
  *   실제 접근 제어는 서버(Apps Script)의 비밀번호 검증 + 세션 토큰이 담당합니다.
  */
-export const SHEETS_API_URL = "";
+export const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbz3KLgT1WMHZqx_HapptXj3stzg5JU9qxV4-xFllHnea1D2V6CCs83YCMDANDJNJZwX6A/exec";
