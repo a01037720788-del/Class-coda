@@ -5,7 +5,7 @@
 import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
 import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
 import { base44 } from "@/api/base44Client";
-import { adminListStudents } from "./sheetsApi";
+import { adminListStudents, adminCreateStudent as sheetsCreateStudent, adminUpdateStudent as sheetsUpdateStudent, adminSetStudentStatus, adminResetStudentPassword } from "./sheetsApi";
 import { getSessionToken, getSessionUser } from "./auth";
 import { extractFunctionError } from "./errorUtils";
 
@@ -39,31 +39,11 @@ async function appUserAction(action, params = {}) {
   return data;
 }
 
-export async function listAppUsers() {
-  try {
-    const data = await appUserAction("list");
-    return data.users || [];
-  } catch (err) {
-    console.warn("[dataAccess] listAppUsers 실패:", err.message);
-    return [];
-  }
-}
-
-export async function createAppUser(userData) {
-  return appUserAction("create", userData);
-}
-
-export async function updateAppUser(id, updateData) {
-  return appUserAction("update", { id, data: updateData });
-}
-
-export async function resetAppUserPassword(id, newPassword) {
-  return appUserAction("resetPassword", { id, newPassword });
-}
-
-export async function deleteAppUser(id) {
-  return appUserAction("delete", { id });
-}
+export async function listAppUsers() { return []; }
+export async function createAppUser() { throw new Error("계정 관리 기능은 아직 이전되지 않았습니다."); }
+export async function updateAppUser() { throw new Error("계정 관리 기능은 아직 이전되지 않았습니다."); }
+export async function resetAppUserPassword(id, password) { return adminResetStudentPassword(id, password); }
+export async function deleteAppUser() { throw new Error("계정 삭제는 지원하지 않습니다."); }
 
 // ─── subjectType → Base44 Entity 이름 매핑 ─────
 const UNIT_ENTITY_MAP = {
@@ -103,154 +83,40 @@ export async function loadGenericUnits(subjectType, subjectId) {
 
 // ─── Admin: Unit CRUD ─────
 export async function loadAllUnits(subjectType) {
-  try {
-    const res = await base44.functions.invoke("loadUnitsAdmin", { subjectType });
-    const data = res?.data || res;
-    if (data && data.units && data.units.length > 0) {
-      return data.units;
-    }
-  } catch (err) {
-    console.warn("[dataAccess] loadUnitsAdmin 실패:", err.message);
-  }
-  // 폴백: 직접 Base44 Entity 조회
-  const entityName = UNIT_ENTITY_MAP[subjectType];
-  if (entityName && base44.entities[entityName]) {
-    try {
-      const items = await base44.entities[entityName].list("unit_number", 5000);
-      return items.map((u) => ({
-        ...u,
-        subject_type: subjectType,
-        _source: "base44",
-        concept_sections_count: u.concept_sections?.length || 0,
-        tables_count: u.tables?.length || 0,
-        example_codes_count: u.example_codes?.length || 0,
-        questions_count: u.questions?.length || 0,
-        missions_count: u.missions?.length || 0,
-        summary_count: u.summary?.length || 0,
-      }));
-    } catch (err) {
-      console.warn(`[dataAccess] ${entityName} 조회 실패:`, err.message);
-    }
-  }
-  return [];
+  return loadUnitsFromRepo(subjectType);
 }
 
 // 관리자용: 데이터 출처 정보와 함께 반환
 export async function loadAllUnitsWithSource(subjectType) {
-  try {
-    const res = await base44.functions.invoke("loadUnitsAdmin", { subjectType });
-    const data = res?.data || res;
-    return {
-      units: data?.units || [],
-      source: data?.source || "base44",
-      count: data?.count || 0,
-      entityCounts: data?.entityCounts,
-      error: data?.error,
-    };
-  } catch (err) {
-    console.warn("[dataAccess] loadUnitsAdmin 실패:", err.message);
-    return { units: [], source: "error", count: 0, error: err.message };
-  }
+  const units = await loadUnitsFromRepo(subjectType);
+  return {units, source:"github-json", count:units.length};
 }
 
 // ─── 단일 Unit 전체 콘텐츠 로드 (수정 화면용) ─────────────────
 export async function loadUnitContent(unitId) {
-  if (!unitId) return null;
-  try {
-    const res = await base44.functions.invoke("loadUnitsAdmin", { unitId });
-    const data = res?.data || res;
-    return data?.unit || null;
-  } catch (err) {
-    console.warn("[dataAccess] loadUnitContent 실패:", err.message);
-    return null;
+  for (const type of ["python", "junior_python", "cpp"]) {
+    const units = await loadUnitsFromRepo(type);
+    const unit = units.find(u => String(u.id) === String(unitId));
+    if (unit) return unit;
   }
+  return null;
 }
 
-export async function saveUnit(unitData) {
-  const { id, subject_type, subject_id, unit_number, title, subtitle, is_active, ...content } = unitData;
-  const token = getSessionToken();
-  if (!token) throw new Error("로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
-  const user = getSessionUser();
-  try {
-    const res = await base44.functions.invoke("unitAdminAction", {
-      action: "save",
-      session_token: token,
-      caller_login_id: user?.login_id || null,
-      unit_data: unitData,
-    });
-    const data = res?.data || res;
-    if (!data?.success) {
-      throw new Error(data?.error || "Unit 저장 실패");
-    }
-    return data;
-  } catch (err) {
-    const realError = extractFunctionError(err, "Unit 저장 실패");
-    throw new Error(realError);
-  }
-}
+export async function saveUnit(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
 
 // Unit 삭제
-export async function deleteUnit(unitOrId) {
-  if (!unitOrId) return;
-  const unitId = typeof unitOrId === "object" ? unitOrId.id : unitOrId;
-  const subjectType = typeof unitOrId === "object" ? unitOrId.subject_type : null;
-  if (typeof unitOrId === "object" && unitOrId !== null) {
-    const entityName = UNIT_ENTITY_MAP[subjectType];
-    if (unitOrId._source === "base44" && entityName && base44.entities[entityName]) {
-      return base44.entities[entityName].delete(unitId);
-    }
-  }
-  const token = getSessionToken();
-  if (!token) throw new Error("인증이 필요합니다.");
-  const user = getSessionUser();
-  const res = await base44.functions.invoke("unitAdminAction", {
-    action: "delete",
-    session_token: token,
-    caller_login_id: user?.login_id || null,
-    unit_id: unitId,
-    subject_type: subjectType,
-  });
-  return res?.data || res;
-}
+export async function deleteUnit(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
 
 // 특정 과목 Unit 전체 삭제
-export async function deleteUnitsBySubject(subjectType) {
-  const res = await base44.functions.invoke("deleteUnitsBySubject", { subjectType });
-  return res?.data || res;
-}
+export async function deleteUnitsBySubject(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
 
 // Unit 활성화 토글
-export async function toggleUnitActive(id, isActive) {
-  const token = getSessionToken();
-  if (!token) throw new Error("인증이 필요합니다.");
-  const user = getSessionUser();
-  const res = await base44.functions.invoke("unitAdminAction", {
-    action: "toggle",
-    session_token: token,
-    caller_login_id: user?.login_id || null,
-    unit_id: id,
-    is_active: isActive,
-  });
-  return res?.data || res;
-}
+export async function toggleUnitActive(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
 
 // ─── Admin: Unit 관련 데이터 일괄 삭제 ──
-export async function deleteProgressByUnit(unitId) {
-  const token = getSessionToken();
-  if (!token) throw new Error("인증이 필요합니다.");
-  const user = getSessionUser();
-  const res = await base44.functions.invoke("unitAdminAction", {
-    action: "delete_related",
-    session_token: token,
-    caller_login_id: user?.login_id || null,
-    unit_id: unitId,
-  });
-  return res?.data || res;
-}
+export async function deleteProgressByUnit(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
 
-export async function deleteSubmissionsByUnit(unitId) {
-  return deleteProgressByUnit(unitId);
-}
+export async function deleteSubmissionsByUnit(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
 
 // ─── 학습 기록: Google Sheets / Apps Script ────────────────────────────────
 // 세 과목의 JSON 단원 ID를 사용해 서버에서 요구하는 subject를 찾습니다.
@@ -582,17 +448,11 @@ export async function loadAllStudents() {
   return data.students || [];
 }
 
-export async function createStudent(data) {
-  return b44Action("create_student", data);
-}
+export async function createStudent(data) { return sheetsCreateStudent(data); }
 
-export async function updateStudent(id, data) {
-  return b44Action("update_student", { id, ...data });
-}
+export async function updateStudent(id, data) { return sheetsUpdateStudent(id, data); }
 
-export async function deleteStudent(id) {
-  return b44Action("delete_student", { student_id: id });
-}
+export async function deleteStudent(id) { throw new Error("학생 데이터 보호를 위해 삭제는 비활성화되어 있습니다. 계정 비활성화를 이용하세요."); }
 
 // ─── Subject ───────────────────────────────────────────────────────
 export async function loadActiveSubjects() {
@@ -702,23 +562,4 @@ export async function verifyStudentExists(studentId) {
 }
 
 // ─── 통합 학생 생성 ──
-export async function adminCreateStudent(data) {
-  const token = getSessionToken();
-  if (!token) throw new Error("인증이 필요합니다.");
-  const user = getSessionUser();
-  try {
-    const res = await base44.functions.invoke("adminCreateStudent", {
-      session_token: token,
-      caller_login_id: user?.login_id || null,
-      ...data,
-    });
-    const result = res?.data || res;
-    if (!result?.success) {
-      throw new Error(result?.error || "학생 생성 실패");
-    }
-    return result;
-  } catch (err) {
-    const msg = err?.response?.data?.error || err?.message || "학생 생성 실패";
-    throw new Error(msg);
-  }
-}
+export async function adminCreateStudent(data) { return sheetsCreateStudent(data); }

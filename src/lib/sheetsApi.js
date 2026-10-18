@@ -120,3 +120,8 @@ export default {
 };
 /** 관리자 전용 학생 목록 — 서버에서 관리자 토큰을 확인합니다. */
 export function adminListStudents() { return call("adminListStudents"); }
+
+export function adminCreateStudent(data) { return call('adminCreateStudent',{data}); }
+export function adminUpdateStudent(studentId,data) { return call('adminUpdateStudent',{student_id:studentId,data}); }
+export function adminSetStudentStatus(studentId,active) { return call('adminSetStudentStatus',{student_id:studentId,active}); }
+export function adminResetStudentPassword(studentId,password) { return call('adminResetStudentPassword',{student_id:studentId,password}); }
