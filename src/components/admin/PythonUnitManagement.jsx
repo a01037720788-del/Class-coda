@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { loadAllUnits, saveUnit } from "@/lib/dataAccess";
 import { loadUnitsFromRepo } from "@/lib/unitsRepo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ export default function PythonUnitManagement() {
   const loadUnits = async () => {
     setLoading(true);
     try {
-      const data = await loadUnitsFromRepo("python");
+      const data = await loadAllUnits("python");
       // unit_number 기준 오름차순 정렬
       const sorted = [...(data || [])].sort((a, b) => (a.unit_number || 0) - (b.unit_number || 0));
       setUnits(sorted);
@@ -65,15 +65,13 @@ export default function PythonUnitManagement() {
     setLoading(false);
   };
 
-  const { saving: reordering, saveOrder } = useUnitReorder({
-    entityName: "PythonUnit",
-    toast,
-    onReload: loadUnits,
-  });
-
+  const reordering = false;
   const handleReorder = async (newOrder) => {
-    setUnits(newOrder);
-    await saveOrder(newOrder);
+    const numbered = newOrder.map((u,i) => ({...u, unit_number:i+1}));
+    try {
+      for (const unit of numbered) await saveUnit("python", unit);
+      await loadUnits();
+    } catch(err) { toast({title:"순서 저장 실패",description:err.message,variant:"destructive"}); await loadUnits(); }
   };
 
   const moveUp = (index) => {
@@ -170,10 +168,10 @@ export default function PythonUnitManagement() {
 
     try {
       if (editingUnit) {
-        await base44.entities.PythonUnit.update(editingUnit.id, saveData);
+        await saveUnit("python", { ...editingUnit, ...saveData });
         toast({ title: "수정 완료", description: `Unit ${saveData.unit_number}. ${saveData.title}` });
       } else {
-        await base44.entities.PythonUnit.create(saveData);
+        await saveUnit("python", { ...saveData, id: `python-unit-${saveData.unit_number}-${Date.now()}` });
         toast({ title: "Unit 추가 완료", description: `Unit ${saveData.unit_number}. ${saveData.title}` });
       }
       await loadUnits();
@@ -197,7 +195,7 @@ export default function PythonUnitManagement() {
   const handleDelete = async (u) => {
     if (!confirm(`Unit ${u.unit_number}. ${u.title} 을(를) 삭제하시겠습니까?`)) return;
     try {
-      await base44.entities.PythonUnit.delete(u.id);
+      await saveUnit("python", { ...u, is_active: false });
       toast({ title: "삭제 완료" });
       loadUnits();
     } catch (err) {
@@ -208,7 +206,7 @@ export default function PythonUnitManagement() {
 
   const toggleActive = async (u) => {
     try {
-      await base44.entities.PythonUnit.update(u.id, { is_active: !(u.is_active !== false) });
+      await saveUnit("python", { ...u, is_active: !(u.is_active !== false) });
       loadUnits();
     } catch (err) {
       toast({ title: "상태 변경 실패", description: err.message, variant: "destructive" });

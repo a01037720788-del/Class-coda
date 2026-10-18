@@ -125,3 +125,7 @@ export function adminCreateStudent(data) { return call('adminCreateStudent',{dat
 export function adminUpdateStudent(studentId,data) { return call('adminUpdateStudent',{student_id:studentId,data}); }
 export function adminSetStudentStatus(studentId,active) { return call('adminSetStudentStatus',{student_id:studentId,active}); }
 export function adminResetStudentPassword(studentId,password) { return call('adminResetStudentPassword',{student_id:studentId,password}); }
+
+// CODA_002 단원 오버라이드 API (관리자 세션 필요)
+export function adminListUnitOverrides(subject) { return call('adminListUnitOverrides',{subject}); }
+export function adminSaveUnitOverride(subject,unit) { return call('adminSaveUnitOverride',{subject,unit}); }

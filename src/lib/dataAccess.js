@@ -5,6 +5,7 @@
 import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
 import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
 import { base44 } from "@/api/base44Client";
+import { adminListUnitOverrides, adminSaveUnitOverride } from "./sheetsApi";
 import { adminListStudents, adminCreateStudent as sheetsCreateStudent, adminUpdateStudent as sheetsUpdateStudent, adminSetStudentStatus, adminResetStudentPassword } from "./sheetsApi";
 import { getSessionToken, getSessionUser } from "./auth";
 import { extractFunctionError } from "./errorUtils";
@@ -83,13 +84,19 @@ export async function loadGenericUnits(subjectType, subjectId) {
 
 // ─── Admin: Unit CRUD ─────
 export async function loadAllUnits(subjectType) {
-  return loadUnitsFromRepo(subjectType);
+  const original = await loadUnitsFromRepo(subjectType);
+  const response = await adminListUnitOverrides(subjectType);
+  const replacements = new Map((response.units || []).map(unit => [String(unit.id), unit]));
+  const merged = original.map(unit => replacements.get(String(unit.id)) || unit);
+  const existing = new Set(original.map(unit => String(unit.id)));
+  for (const unit of replacements.values()) if (!existing.has(String(unit.id))) merged.push(unit);
+  return merged.sort((a,b) => Number(a.unit_number||0)-Number(b.unit_number||0));
 }
 
 // 관리자용: 데이터 출처 정보와 함께 반환
 export async function loadAllUnitsWithSource(subjectType) {
-  const units = await loadUnitsFromRepo(subjectType);
-  return {units, source:"github-json", count:units.length};
+  const units = await loadAllUnits(subjectType);
+  return {units, source:"github-json+google-sheets-overrides", count:units.length};
 }
 
 // ─── 단일 Unit 전체 콘텐츠 로드 (수정 화면용) ─────────────────
@@ -102,7 +109,10 @@ export async function loadUnitContent(unitId) {
   return null;
 }
 
-export async function saveUnit(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
+export async function saveUnit(subjectType, unit) {
+  if (!["python", "junior_python", "cpp"].includes(subjectType)) throw new Error("지원하지 않는 과목입니다.");
+  return adminSaveUnitOverride(subjectType, unit);
+}
 
 // Unit 삭제
 export async function deleteUnit(...args) { throw new Error("단원 변경은 아직 연결되지 않았습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다."); }
