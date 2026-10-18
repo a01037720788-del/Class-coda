@@ -129,3 +129,6 @@ export function adminResetStudentPassword(studentId,password) { return call('adm
 // CODA_002 단원 오버라이드 API (관리자 세션 필요)
 export function adminListUnitOverrides(subject) { return call('adminListUnitOverrides',{subject}); }
 export function adminSaveUnitOverride(subject,unit) { return call('adminSaveUnitOverride',{subject,unit}); }
+
+// CODA_003: 학생 인증 토큰으로 자신의 수강 과목 변경분만 조회
+export function getStudentUnitOverrides(subject) { return call('getStudentUnitOverrides', {subject}); }

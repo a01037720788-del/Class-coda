@@ -5,7 +5,7 @@
 import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
 import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
 import { base44 } from "@/api/base44Client";
-import { adminListUnitOverrides, adminSaveUnitOverride } from "./sheetsApi";
+import { adminListUnitOverrides, adminSaveUnitOverride, getStudentUnitOverrides } from "./sheetsApi";
 import { adminListStudents, adminCreateStudent as sheetsCreateStudent, adminUpdateStudent as sheetsUpdateStudent, adminSetStudentStatus, adminResetStudentPassword } from "./sheetsApi";
 import { getSessionToken, getSessionUser } from "./auth";
 import { extractFunctionError } from "./errorUtils";
@@ -61,20 +61,42 @@ const UNIT_ENTITY_MAP = {
 
 // ─── Unit 로드 (학생용 — 활성 Unit만) ──────────────────────────
 
-export async function loadUnits(subjectType, { metadataOnly = false } = {}) {
+// CODA_003: 원본 JSON에 Google Sheets 단원 변경분을 합칩니다.
+// 기존 단원 ID를 그대로 유지하여 학습 진도와 제출 기록의 연결을 보존합니다.
+async function mergeStudentUnits(subjectType) {
+  const originals = await loadUnitsFromRepo(subjectType);
+  let overrides = [];
   try {
-    const units = await loadActiveUnitsFromRepo(subjectType);
-    return units.map((unit) => ({
-      ...unit,
-      subject_type: subjectType,
-      _source: "repo",
+    const response = await getStudentUnitOverrides(subjectType);
+    overrides = Array.isArray(response.units) ? response.units : [];
+  } catch (error) {
+    // API가 일시적으로 실패해도 원본 단원은 학습할 수 있습니다.
+    console.warn(`[CODA_003] ${subjectType} 단원 변경분 조회 실패:`, error);
+  }
+  const byId = new Map(overrides.filter(u => u && u.id != null).map(u => [String(u.id), u]));
+  const merged = originals.map(unit => {
+    const override = byId.get(String(unit.id));
+    return override ? { ...unit, ...override, id: unit.id } : unit;
+  });
+  const existingIds = new Set(originals.map(u => String(u.id)));
+  for (const override of overrides) {
+    if (override && override.id != null && !existingIds.has(String(override.id))) merged.push(override);
+  }
+  return merged.sort((a, b) => Number(a.unit_number || 0) - Number(b.unit_number || 0));
+}
+
+export async function loadUnits(subjectType, { metadataOnly = false } = {}) {
+  if (!["python", "junior_python", "cpp"].includes(subjectType)) return [];
+  try {
+    const units = await mergeStudentUnits(subjectType);
+    return units.filter(unit => unit.is_active !== false).map(unit => ({
+      ...unit, subject_type: subjectType, _source: "repo+google-sheets",
     }));
   } catch (err) {
     console.error(`[dataAccess] loadUnits(${subjectType}) 실패:`, err);
     return [];
   }
 }
-
 
 
 // ─── Generic Units (algorithm, other 등) ─────
@@ -135,7 +157,7 @@ let unitSubjectIndexPromise;
 async function unitSubjectIndex() {
   if (!unitSubjectIndexPromise) {
     unitSubjectIndexPromise = Promise.all(CODA_SUBJECTS.map(async subject => {
-      const units = await loadUnitsFromRepo(subject);
+      const units = await mergeStudentUnits(subject);
       return units.map(u => [String(u.id), subject]);
     })).then(groups => new Map(groups.flat())).catch(err => {
       unitSubjectIndexPromise = null;
@@ -226,7 +248,7 @@ export async function saveProgress(studentId, unitId, data, context = {}) {
   assertOwnStudent(studentId);
   const subject = await resolveSubject(unitId, context);
   const [existing, units] = await Promise.all([
-    loadProgress(studentId, unitId), loadUnitsFromRepo(subject)
+    loadProgress(studentId, unitId), mergeStudentUnits(subject)
   ]);
   const unit = units.find(u => String(u.id) === String(unitId));
   if (!unit) throw new Error(`단원 정보를 찾을 수 없습니다: ${unitId}`);
@@ -315,7 +337,7 @@ export async function loadMissionSubmissions(studentId, unitId) {
 async function saveCompletedItem(studentId, unitId, type, index, isCorrect, context, progressUpdate, submission = null) {
   assertOwnStudent(studentId);
   const subject = await resolveSubject(unitId, context);
-  const units = await loadUnitsFromRepo(subject);
+  const units = await mergeStudentUnits(subject);
   const unit = units.find(u => String(u.id) === String(unitId));
   if (!unit) throw new Error(`단원 정보를 찾을 수 없습니다: ${unitId}`);
   const count = type === "example" ? (unit.example_codes?.length || 0)
@@ -343,7 +365,7 @@ export async function saveExamplePractice(studentId, unitId, exampleIndex, data,
 }
 export async function saveQuestionResult(studentId, unitId, questionNumber, data, context = {}, progressUpdate = null) {
   const subject = await resolveSubject(unitId, context);
-  const units = await loadUnitsFromRepo(subject);
+  const units = await mergeStudentUnits(subject);
   const unit = units.find(u => String(u.id) === String(unitId));
   const index = unit?.questions?.findIndex((q, i) => Number(q.number || i + 1) === Number(questionNumber)) ?? -1;
   return saveCompletedItem(studentId, unitId, "question", index, data?.is_correct === true, context, progressUpdate, {
@@ -354,7 +376,7 @@ export async function saveQuestionResult(studentId, unitId, questionNumber, data
 }
 export async function saveMissionSubmission(studentId, unitId, missionNumber, data, context = {}, progressUpdate = null) {
   const subject = await resolveSubject(unitId, context);
-  const units = await loadUnitsFromRepo(subject);
+  const units = await mergeStudentUnits(subject);
   const unit = units.find(u => String(u.id) === String(unitId));
   const index = unit?.missions?.findIndex((m, i) => Number(m.number || i + 1) === Number(missionNumber)) ?? -1;
   // 기존 MissionPanel은 정답이면서 테스트케이스가 없고 expected 출력도 없으면 통과 처리합니다.
