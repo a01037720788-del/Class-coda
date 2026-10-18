@@ -5,6 +5,7 @@
 import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
 import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
 import { base44 } from "@/api/base44Client";
+import { adminListStudents } from "./sheetsApi";
 import { getSessionToken, getSessionUser } from "./auth";
 import { extractFunctionError } from "./errorUtils";
 
@@ -577,13 +578,8 @@ export async function loadStudentByLoginId(loginId) {
 
 // ─── 학생 전체 조회 ──
 export async function loadAllStudents() {
-  try {
-    const data = await b44Action("list_students");
-    return data.students || [];
-  } catch (err) {
-    console.warn("[dataAccess] loadAllStudents 실패:", err.message);
-    return [];
-  }
+  const data = await adminListStudents();
+  return data.students || [];
 }
 
 export async function createStudent(data) {
@@ -600,33 +596,27 @@ export async function deleteStudent(id) {
 
 // ─── Subject ───────────────────────────────────────────────────────
 export async function loadActiveSubjects() {
-  try {
-    const data = await b44Action("list_subjects");
-    return (data.subjects || []).filter(s => s.is_active !== false && !s.is_deleted);
-  } catch (err) {
-    console.warn("[dataAccess] loadActiveSubjects 실패:", err.message);
-    return [];
-  }
+  return [
+    { id: "python", name: "Python", type: "python", is_active: true, color: "#3B82F6" },
+    { id: "junior_python", name: "저학년 Python", type: "junior_python", is_active: true, color: "#84CC16" },
+    { id: "cpp", name: "C++", type: "cpp", is_active: true, color: "#2563EB" },
+  ];
 }
 
 export async function loadAllSubjects() {
-  try {
-    const data = await b44Action("list_subjects");
-    return (data.subjects || []).filter(s => !s.is_deleted);
-  } catch (err) {
-    console.warn("[dataAccess] loadAllSubjects 실패:", err.message);
-    return [];
-  }
+  return [
+    { id: "python", name: "Python", type: "python", is_active: true, color: "#3B82F6" },
+    { id: "junior_python", name: "저학년 Python", type: "junior_python", is_active: true, color: "#84CC16" },
+    { id: "cpp", name: "C++", type: "cpp", is_active: true, color: "#2563EB" },
+  ];
 }
 
 export async function loadAllSubjectsAdmin() {
-  try {
-    const data = await b44Action("list_subjects");
-    return data.subjects || [];
-  } catch (err) {
-    console.warn("[dataAccess] loadAllSubjectsAdmin 실패:", err.message);
-    return [];
-  }
+  return [
+    { id: "python", name: "Python", type: "python", is_active: true, color: "#3B82F6" },
+    { id: "junior_python", name: "저학년 Python", type: "junior_python", is_active: true, color: "#84CC16" },
+    { id: "cpp", name: "C++", type: "cpp", is_active: true, color: "#2563EB" },
+  ];
 }
 
 export async function createSubject(data) {

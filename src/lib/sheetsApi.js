@@ -118,3 +118,5 @@ export default {
   getStudentProfile, getStudentSubjects,
   getStudentProgress, saveStudentProgress, saveQuizResult, saveMissionSubmission,
 };
+/** 관리자 전용 학생 목록 — 서버에서 관리자 토큰을 확인합니다. */
+export function adminListStudents() { return call("adminListStudents"); }
