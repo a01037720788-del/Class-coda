@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { loadUnitsFromRepo } from "@/lib/unitsRepo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +53,7 @@ export default function PythonUnitManagement() {
   const loadUnits = async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.PythonUnit.list();
+      const data = await loadUnitsFromRepo("python");
       // unit_number 기준 오름차순 정렬
       const sorted = [...(data || [])].sort((a, b) => (a.unit_number || 0) - (b.unit_number || 0));
       setUnits(sorted);

@@ -154,7 +154,7 @@ export default function SubjectManagement() {
     try {
       let data = await loadAllSubjectsAdmin();
       // 누락된 기본 과목 자동 생성/보정 후 재조회
-      const changed = await ensureDefaultSubjects(data);
+      const changed = false; // 독립 배포: 기본 과목은 정적 목록이며 Base44 자동 생성 금지
       if (changed) {
         data = await loadAllSubjectsAdmin();
       }
