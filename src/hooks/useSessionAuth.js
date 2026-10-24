@@ -5,7 +5,8 @@ import {
   getSessionToken,
   setSessionUser,
   clearSession,
-  toSessionUser
+  toSessionUser,
+  consumeFreshServerLogin
 } from "@/lib/auth";
 
 import { validateSession } from "@/lib/sheetsApi";
@@ -32,6 +33,13 @@ export function useSessionAuth() {
       }
 
       try {
+        // 같은 SPA 실행 중 방금 서버 로그인에 성공한 경우 중복 왕복을 생략합니다.
+        // 새로고침/직접 접속 시에는 반드시 서버 검증을 다시 수행합니다.
+        const freshUser = consumeFreshServerLogin(token);
+        if (freshUser) {
+          if (!cancelled) { setUser(freshUser); setLoading(false); }
+          return;
+        }
         // 반드시 서버에서 세션 검증
         const student = await validateSession();
 

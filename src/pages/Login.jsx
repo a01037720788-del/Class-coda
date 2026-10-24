@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Lock, User, Loader2, Code2, Moon, Sun, Eye, EyeOff } from "lucide-react";
 import {
-  setSessionToken, setSessionUser, getSessionToken, clearSession, toSessionUser,
+  setSessionToken, setSessionUser, getSessionToken, clearSession, toSessionUser, markFreshServerLogin,
 } from "@/lib/auth";
 import { login as loginWithSheets, getToken, validateSession } from "@/lib/sheetsApi";
 import { appPath } from "@/lib/basePath";
@@ -26,6 +27,7 @@ function loginErrorMessage(err) {
 }
 
 export default function Login() {
+  const navigate = useNavigate();
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -53,7 +55,7 @@ export default function Login() {
         if (cancelled) return;
         if (student) {
           setSessionUser(toSessionUser(student));
-          window.location.href = appPath(homeFor(toSessionUser(student)));
+          navigate(homeFor(toSessionUser(student)), { replace: true });
         } else {
           clearSession();            // 만료 · 로그아웃 · 비활성 계정
         }
@@ -63,7 +65,7 @@ export default function Login() {
     })();
 
     return () => { cancelled = true; };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (dark) {
@@ -88,6 +90,7 @@ export default function Login() {
 
       setSessionToken(getToken());     // 서버가 발급한 토큰 (클라이언트 생성 토큰 사용 안 함)
       setSessionUser(sessionUser);     // 해시 · 솔트는 내려오지 않습니다
+      markFreshServerLogin(getToken()); // 로그인 응답으로 방금 인증된 세션
 
       // 아이디 저장
       if (rememberMe) {
@@ -96,7 +99,7 @@ export default function Login() {
         localStorage.removeItem("coda_remember_id");
       }
 
-      window.location.href = appPath(homeFor(toSessionUser(student)));   // 로그인 성공 → 학생 홈
+      navigate(homeFor(toSessionUser(student)), { replace: true });   // 로그인 성공 → 학생 홈
     } catch (err) {
       setError(loginErrorMessage(err));
     } finally {
