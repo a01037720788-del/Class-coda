@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { base44 } from "@/api/base44Client";
 import { runPython } from "@/lib/codeRunner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

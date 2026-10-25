@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { runPython, runCpp } from "@/lib/codeRunner";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Play, RotateCcw } from "lucide-react";

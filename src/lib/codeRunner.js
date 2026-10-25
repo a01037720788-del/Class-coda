@@ -23,7 +23,6 @@
  *   judge:  { mode, total, passed, results, verdict, ... }
  */
 
-import { base44 } from "@/api/base44Client";
 
 // ═════════════════════════════════════════════════════════════════════════════
 //  Pyodide Web Worker (Python in-browser execution)
@@ -273,28 +272,14 @@ export async function runPython({
     if (result) return result;
     throw new Error("Pyodide worker 사용 불가");
   } catch (pyodideError) {
-    // 2순위: Base44 Functions 폴백 (학생이 Base44 인증이 아닌 Supabase 인증을 사용하면 401 발생 가능)
-    try {
-      const res = await base44.functions.invoke("runPythonCode", {
-        code, stdin, mode, test_cases,
-      });
-      return res.data || res;
-    } catch (base44Error) {
-      const status = base44Error?.response?.status || base44Error?.status;
-      const isAuthErr = status === 401 || (base44Error?.message || "").includes("401");
-      console.error("[codeRunner] runPython Base44 fallback 실패:", {
-        httpStatus: status,
-        errorMessage: base44Error?.message,
-        isAuthErr,
-      });
-      return {
-        output: "",
-        error: isAuthErr
-          ? "코드 실행 서버 인증에 실패했습니다. 잠시 후 다시 시도해 주세요."
-          : "코드를 실행할 수 없습니다. 잠시 후 다시 시도해 주세요.",
-        exit_code: 1,
-      };
-    }
+    // 독립 운영: Base44 서버로 코드를 전송하지 않습니다.
+    // Pyodide 오류는 그대로 사용자에게 안내합니다.
+    console.error("[codeRunner] 브라우저 Python 실행 실패:", pyodideError);
+    return {
+      output: "",
+      error: "브라우저 Python 실행 환경을 시작하지 못했습니다. 인터넷 연결을 확인한 후 새로고침하여 다시 시도해 주세요.",
+      exit_code: 1,
+    };
   }
 }
 
