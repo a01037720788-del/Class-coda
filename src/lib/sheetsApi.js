@@ -132,3 +132,6 @@ export function adminSaveUnitOverride(subject,unit) { return call('adminSaveUnit
 
 // CODA_003: 학생 인증 토큰으로 자신의 수강 과목 변경분만 조회
 export function getStudentUnitOverrides(subject) { return call('getStudentUnitOverrides', {subject}); }
+
+/** 관리자 AI 단원 생성 (Google Apps Script 서버 측 OpenAI 호출) */
+export function generateAIUnit(payload) { return call("generateAIUnit", { payload }); }

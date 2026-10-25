@@ -12,7 +12,7 @@
  *     - partialData: 해당 모드에 맞는 데이터
  */
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { generateAIUnit } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,7 +137,7 @@ export default function AIUnitGenerator({
         scope_section: buildScopePromptSection(computedScope),
         banned_concepts: computedScope.bannedConcepts,
       };
-      const res = await base44.functions.invoke("generateUnitWithAI", payload);
+      const res = await generateAIUnit(payload);
       const data = res?.data || res;
       if (!data.success) {
         throw new Error(data.error || "AI 생성에 실패했습니다.");
