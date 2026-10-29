@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getSessionToken, getSessionUser, setSessionUser } from "@/lib/auth";
-import { base44 } from "@/api/base44Client";
+import { changeMyPassword } from "@/lib/sheetsApi";
+import { clearSession } from "@/lib/auth";
 import { Lock, Loader2, Code2, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { appPath } from "@/lib/basePath";
 
@@ -58,19 +59,9 @@ export default function ForceChangePassword() {
         setError("인증 정보를 찾을 수 없습니다. 다시 로그인해주세요.");
         return;
       }
-      const res = await base44.functions.invoke("changeMyPassword", {
-        session_token: token,
-        login_id: currentUser?.login_id || null,
-        old_password: oldPassword,
-        new_password: newPassword,
-      });
-      const data = res?.data || res;
-      if (data?.error) throw new Error(data.error);
-
-      if (currentUser) {
-        setSessionUser({ ...currentUser, must_change_password: false });
-      }
-      redirectByRole(currentUser?.role || "student");
+      await changeMyPassword(oldPassword, newPassword);
+      clearSession();
+      window.location.href = appPath("/login");
     } catch (err) {
       const msg = err?.message || err?.response?.data?.error || "비밀번호 변경 중 오류가 발생했습니다.";
       setError(msg);

@@ -135,3 +135,6 @@ export function getStudentUnitOverrides(subject) { return call('getStudentUnitOv
 
 /** 관리자 AI 단원 생성 (Google Apps Script 서버 측 OpenAI 호출) */
 export function generateAIUnit(payload) { return call("generateAIUnit", { payload }); }
+
+/** 본인 비밀번호 변경. 성공 시 서버에서 기존 세션을 종료합니다. */
+export function changeMyPassword(oldPassword, newPassword) { return call("changeMyPassword", { old_password: oldPassword, new_password: newPassword }); }
