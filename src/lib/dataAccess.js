@@ -4,40 +4,14 @@
 // 기타 기존 관리자/과목 관리 함수에는 Base44 의존성이 남아 있습니다.
 import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
 import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
-import { base44 } from "@/api/base44Client";
 import { adminListUnitOverrides, adminSaveUnitOverride, getStudentUnitOverrides } from "./sheetsApi";
 import { adminListStudents, adminCreateStudent as sheetsCreateStudent, adminUpdateStudent as sheetsUpdateStudent, adminSetStudentStatus, adminResetStudentPassword } from "./sheetsApi";
 import { getSessionToken, getSessionUser } from "./auth";
-import { extractFunctionError } from "./errorUtils";
 
-// ─── Base44 관리자 CRUD 헬퍼 ──────────────────────────────────
-async function b44Action(action, params = {}) {
-  const token = getSessionToken();
-  const user = getSessionUser();
-  const res = await base44.functions.invoke("base44AdminAction", {
-    session_token: token || null,
-    caller_login_id: user?.login_id || null,
-    action,
-    ...params,
-  });
-  const data = res?.data || res;
-  if (!data?.success) {
-    throw new Error(data?.error || "작업 실패");
-  }
-  return data;
-}
-
-// ─── AppUser 관리 (manageAppUser 백엔드 함수) ──────
-async function appUserAction(action, params = {}) {
-  const user = getSessionUser();
-  const res = await base44.functions.invoke("manageAppUser", {
-    caller_login_id: user?.login_id || null,
-    action,
-    ...params,
-  });
-  const data = res?.data || res;
-  if (data?.error) throw new Error(data.error);
-  return data;
+// 기존 프로젝트의 미이전 관리 기능을 Base44로 전송하지 않습니다.
+// 지원하지 않는 작업은 명확하게 중단하여 데이터가 다른 서비스에 저장되지 않도록 합니다.
+async function b44Action(action) {
+  throw new Error(`현재 CODA 독립 운영에서 지원하지 않는 관리 작업입니다: ${action}`);
 }
 
 export async function listAppUsers() { return []; }
@@ -45,19 +19,6 @@ export async function createAppUser() { throw new Error("계정 관리 기능은
 export async function updateAppUser() { throw new Error("계정 관리 기능은 아직 이전되지 않았습니다."); }
 export async function resetAppUserPassword(id, password) { return adminResetStudentPassword(id, password); }
 export async function deleteAppUser() { throw new Error("계정 삭제는 지원하지 않습니다."); }
-
-// ─── subjectType → Base44 Entity 이름 매핑 ─────
-const UNIT_ENTITY_MAP = {
-  python: "PythonUnit",
-  junior_python: "JuniorPythonUnit",
-  cpp: "CppUnit",
-  html: "HTMLUnit",
-  java: "JavaUnit",
-  generic: "GenericUnit",
-  entry: "EntryUnit",
-  cos: "COSUnit",
-  algorithm_learning: "AlgorithmUnit",
-};
 
 // ─── Unit 로드 (학생용 — 활성 Unit만) ──────────────────────────
 
@@ -397,82 +358,20 @@ export async function getStudentLearningContext(token) {
   return null;
 }
 
-// ─── 학생용 AlgorithmUnit 로드 (Base44 Entity + 클라이언트 sanitize) ──
-export async function loadStudentAlgorithmUnits() {
-  try {
-    const items = await base44.entities.AlgorithmUnit.filter({ is_active: true }, "unit_number", 5000);
-    return (items || []).map(unit => {
-      const u = { ...unit, subject_type: "algorithm_learning", _source: "base44" };
-
-      // implementations에서 answer_code 제거 + hidden TC 데이터 제거
-      if (u.implementations) {
-        u.implementations = u.implementations.map(impl => {
-          const { answer_code, ...rest } = impl;
-          if (rest.test_cases) {
-            rest.test_cases = rest.test_cases.map(tc => tc.hidden ? { hidden: true } : tc);
-          }
-          return rest;
-        });
-      }
-
-      // missions에서 answer_code 제거 + hidden TC 데이터 제거
-      if (u.missions) {
-        u.missions = u.missions.map(m => {
-          const { answer_code, ...rest } = m;
-          if (rest.test_cases) {
-            rest.test_cases = rest.test_cases.map(tc => tc.hidden ? { hidden: true } : tc);
-          }
-          return rest;
-        });
-      }
-
-      // judge_problems에서 answer_code 제거 + hidden TC 데이터 제거 + 미공개 필터
-      if (u.judge_problems) {
-        u.judge_problems = u.judge_problems
-          .filter(p => p.is_published !== false)
-          .map(p => {
-            const { answer_code, ...publicFields } = p;
-            if (publicFields.test_cases) {
-              publicFields.test_cases = publicFields.test_cases.map(tc => {
-                if (tc.hidden) {
-                  return { id: tc.id, hidden: true, description: tc.description || '' };
-                }
-                return tc;
-              });
-            }
-            return publicFields;
-          });
-      }
-
-      return u;
-    });
-  } catch (err) {
-    console.warn("[dataAccess] loadStudentAlgorithmUnits 실패:", err.message);
-    return [];
-  }
-}
+// 현재 GitHub CODA에서는 알고리즘 학습 과목을 제공하지 않습니다.
+export async function loadStudentAlgorithmUnits() { return []; }
 
 // ─── Student ──────────────────────────────────────────────────────
 export async function loadStudent(studentId) {
   if (!studentId) return null;
-  try {
-    const data = await b44Action("get_student", { student_id: studentId });
-    return data.student || null;
-  } catch (err) {
-    console.warn("[dataAccess] loadStudent 실패:", err.message);
-    return null;
-  }
+  const students = await loadAllStudents();
+  return students.find(s => String(s.student_id || s.id) === String(studentId)) || null;
 }
 
 export async function loadStudentByLoginId(loginId) {
   if (!loginId) return null;
-  try {
-    const data = await b44Action("get_student_by_login_id", { login_id: loginId });
-    return data.student || null;
-  } catch (err) {
-    console.warn("[dataAccess] loadStudentByLoginId 실패:", err.message);
-    return null;
-  }
+  const students = await loadAllStudents();
+  return students.find(s => String(s.login_id || '').toLowerCase() === String(loginId).toLowerCase()) || null;
 }
 
 // ─── 학생 전체 조회 ──
