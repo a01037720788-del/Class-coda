@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { loadAllStudents, listAppUsers, updateStudent, updateAppUser, adminCreateStudent } from "@/lib/dataAccess";
 import { getSessionToken, getSessionUser } from "@/lib/auth";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
