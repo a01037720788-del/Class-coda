@@ -1,6 +1,5 @@
-// 학생 테마 설정을 StudentUnitProgress에 저장/로드
+// 학생별 테마는 이 브라우저에 저장합니다. Base44 서버는 사용하지 않습니다.
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 
 export const DEFAULT_THEME = {
   background_color: "#f0f0f5",
@@ -15,45 +14,33 @@ export const DEFAULT_THEME = {
   result_text: "#e5e7eb",
 };
 
-const THEME_KEY = "coda_student_theme";
+const storageKey = (studentId) => `coda_student_theme_${String(studentId || 'guest')}`;
+const readTheme = (studentId) => {
+  try {
+    const raw = localStorage.getItem(storageKey(studentId));
+    if (raw) return { ...DEFAULT_THEME, ...JSON.parse(raw) };
+    // 기존 단일 계정 저장 형식에서 현재 학생으로 1회 이전
+    const legacy = localStorage.getItem('coda_student_theme');
+    if (legacy && studentId) {
+      const parsed = { ...DEFAULT_THEME, ...JSON.parse(legacy) };
+      localStorage.setItem(storageKey(studentId), JSON.stringify(parsed));
+      localStorage.removeItem('coda_student_theme');
+      return parsed;
+    }
+  } catch { /* 브라우저 저장소 제한 */ }
+  return { ...DEFAULT_THEME };
+};
 
 export function useTheme(studentId) {
-  const [theme, setThemeState] = useState(() => {
-    try {
-      const saved = localStorage.getItem(THEME_KEY);
-      return saved ? { ...DEFAULT_THEME, ...JSON.parse(saved) } : DEFAULT_THEME;
-    } catch { return DEFAULT_THEME; }
-  });
+  const [theme, setThemeState] = useState(() => readTheme(studentId));
+  useEffect(() => { setThemeState(readTheme(studentId)); }, [studentId]);
 
   const saveTheme = async (newTheme) => {
-    setThemeState(newTheme);
-    localStorage.setItem(THEME_KEY, JSON.stringify(newTheme));
-    // Also persist in DB via a dedicated theme record
-    if (!studentId) return;
-    const key = `theme_${studentId}`;
-    const existing = await base44.entities.StudentUnitProgress.filter({ student_id: studentId, unit_id: key });
-    if (existing.length > 0) {
-      await base44.entities.StudentUnitProgress.update(existing[0].id, { theme_settings: newTheme });
-    } else {
-      await base44.entities.StudentUnitProgress.create({
-        student_id: studentId, unit_id: key, unit_title: "__theme__",
-        theme_settings: newTheme,
-      });
-    }
+    const next = { ...DEFAULT_THEME, ...newTheme };
+    setThemeState(next);
+    try { localStorage.setItem(storageKey(studentId), JSON.stringify(next)); }
+    catch { /* 저장소 접근이 막힌 경우 현재 화면에만 반영 */ }
   };
-
-  // Load from DB on mount
-  useEffect(() => {
-    if (!studentId) return;
-    const key = `theme_${studentId}`;
-    base44.entities.StudentUnitProgress.filter({ student_id: studentId, unit_id: key }).then(res => {
-      if (res.length > 0 && res[0].theme_settings) {
-        const t = { ...DEFAULT_THEME, ...res[0].theme_settings };
-        setThemeState(t);
-        localStorage.setItem(THEME_KEY, JSON.stringify(t));
-      }
-    }).catch(() => {});
-  }, [studentId]);
 
   return { theme, saveTheme };
 }
