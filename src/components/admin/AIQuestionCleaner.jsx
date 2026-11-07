@@ -3,7 +3,7 @@
  * 기존 PythonUnitEditor 내 handleAutoCleanup 로직을 공통 컴포넌트로 분리
  */
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { cleanupQuestions } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -36,15 +36,12 @@ export default function AIQuestionCleaner({ subject = "python", questions = [], 
     const original = questions.map(normalize);
 
     try {
-      const res = await base44.functions.invoke("cleanupQuestions", {
-        questions: original,
-        context: SUBJECT_CONTEXT[subject] || SUBJECT_CONTEXT.python,
-      });
-
-      const raw = res?.data;
-      if (!raw || !Array.isArray(raw.cleaned_questions)) {
+      const raw = await cleanupQuestions(
+        original,
+        SUBJECT_CONTEXT[subject] || SUBJECT_CONTEXT.python
+      );
+      if (!raw || !Array.isArray(raw.cleaned_questions) || raw.cleaned_questions.length !== original.length) {
         // 서버가 원본을 돌려줬더라도 형식 불일치 → 원본 유지
-        onChange(original);
         const errMsg = raw?.error || "AI 응답 형식 오류";
         setError(`AI 자동 정리에 실패했습니다.\n원인: ${errMsg}`);
         toast({ title: "AI 정리 실패", description: errMsg, variant: "destructive" });
@@ -64,7 +61,6 @@ export default function AIQuestionCleaner({ subject = "python", questions = [], 
       setSummary(raw.summary || `${validated.length}개 문제 정리 완료`);
     } catch (err) {
       // 실패 시 반드시 원본 유지
-      onChange(original);
       const msg =
         err?.response?.data?.error ||
         err?.response?.data?.detail ||

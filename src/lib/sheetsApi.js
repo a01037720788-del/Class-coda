@@ -138,3 +138,6 @@ export function generateAIUnit(payload) { return call("generateAIUnit", { payloa
 
 /** 본인 비밀번호 변경. 성공 시 서버에서 기존 세션을 종료합니다. */
 export function changeMyPassword(oldPassword, newPassword) { return call("changeMyPassword", { old_password: oldPassword, new_password: newPassword }); }
+
+/** 관리자 전용 AI 문제 정리 (Apps Script) */
+export function cleanupQuestions(questions, context) { return call("cleanupQuestions", { questions, context }); }
