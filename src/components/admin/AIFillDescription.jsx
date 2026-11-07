@@ -9,7 +9,7 @@
  *   onApply: (data) => void  — { learning_objectives, concept_sections, summary } 전달
  */
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { fillUnitDescription } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -120,27 +120,7 @@ ${extraPrompt || "(없음)"}
   "summary": ["요약1", "요약2", ...]
 }`;
 
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            learning_objectives: { type: "array", items: { type: "string" } },
-            concept_sections: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  lines: { type: "array", items: { type: "string" } },
-                  code_example: { type: "string" },
-                },
-              },
-            },
-            summary: { type: "array", items: { type: "string" } },
-          },
-        },
-      });
+      const res = await fillUnitDescription(prompt);
 
       // InvokeLLM with response_json_schema returns a dict directly
       const data = res || {};

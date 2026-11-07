@@ -141,3 +141,6 @@ export function changeMyPassword(oldPassword, newPassword) { return call("change
 
 /** 관리자 전용 AI 문제 정리 (Apps Script) */
 export function cleanupQuestions(questions, context) { return call("cleanupQuestions", { questions, context }); }
+
+/** 관리자 AI 설명 채우기 (Google Apps Script) */
+export function fillUnitDescription(prompt) { return call("fillUnitDescription", { prompt }); }
