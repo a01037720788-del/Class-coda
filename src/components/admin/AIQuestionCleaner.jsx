@@ -15,6 +15,40 @@ const SUBJECT_CONTEXT = {
   java: "Java 17 교육 플랫폼용 문제. System.out.println/Scanner/class/ArrayList 등 Java 특성 반영",
 };
 
+/** 객관식 AI 정답을 CODA 채점 형식(1부터 시작하는 보기 번호)으로 변환합니다. */
+function normalizeChoiceAnswer(question) {
+  if (question.type !== "객관식" || !Array.isArray(question.options)) return question;
+  const options = question.options;
+  const answer = String(question.answer ?? "").trim();
+  const count = options.length;
+  if (!count || !answer) return question;
+
+  // 1, "2", "2번", "②", "2. 보기 내용" 등 번호 형태
+  const circled = "①②③④⑤⑥⑦⑧⑨⑩";
+  const circledIndex = circled.indexOf(answer);
+  if (circledIndex >= 0 && circledIndex < count) {
+    return { ...question, answer: String(circledIndex + 1) };
+  }
+  const numberMatch = answer.match(/^(?:정답\s*[:：]\s*)?(\d+)(?:\s*번|\s*[.)])?(?:\s+.*)?$/);
+  if (numberMatch) {
+    const n = Number(numberMatch[1]);
+    if (Number.isInteger(n) && n >= 1 && n <= count) {
+      return { ...question, answer: String(n) };
+    }
+  }
+
+  // AI가 정답을 보기 문장으로 반환한 경우: 공백 정규화 후 유일하게 일치하는 보기 찾기
+  const normalizeText = (v) => String(v ?? "").normalize("NFKC").trim().replace(/\s+/g, " ");
+  const stripPrefix = (v) => normalizeText(v).replace(/^(?:정답\s*[:：]\s*)?(?:[①②③④⑤⑥⑦⑧⑨⑩]|\d+\s*[.)번])\s*/, "");
+  const target = stripPrefix(answer);
+  const matches = options.map((option, index) => ({ index, text: stripPrefix(option) }))
+    .filter((item) => item.text === target);
+  if (matches.length === 1) return { ...question, answer: String(matches[0].index + 1) };
+
+  // 잘못된 정답을 조용히 저장하지 않고 상위 호출자에게 검증 오류로 알림
+  throw new Error(`객관식 정답을 보기 번호로 변환할 수 없습니다: ${answer}`);
+}
+
 export default function AIQuestionCleaner({ subject = "python", questions = [], onChange }) {
   const [cleaning, setCleaning] = useState(false);
   const [summary, setSummary] = useState("");
@@ -57,8 +91,9 @@ export default function AIQuestionCleaner({ subject = "python", questions = [], 
         answer: q.answer ?? original[idx]?.answer ?? "",
       }));
 
-      onChange(validated);
-      setSummary(raw.summary || `${validated.length}개 문제 정리 완료`);
+      const normalizedAnswers = validated.map(normalizeChoiceAnswer);
+      onChange(normalizedAnswers);
+      setSummary(raw.summary || `${normalizedAnswers.length}개 문제 정리 완료`);
     } catch (err) {
       // 실패 시 반드시 원본 유지
       const msg =
