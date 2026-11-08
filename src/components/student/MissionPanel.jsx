@@ -152,7 +152,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
       return;
     }
 
-    const code = codes[mNum] || m.default_code || `print("Hello CODA")`;
+    const code = codes[mNum] ?? m.default_code ?? `print("Hello CODA")`;
     if (!code.trim()) return;
     setSubmitting(s => ({ ...s, [mNum]: true }));
     const stdin = stdinInputs[mNum] || "";
@@ -367,7 +367,8 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
                   {/* 왼쪽: 미션 정보 */}
                   <div className={`p-5 sm:p-6 space-y-3 bg-white ${expandedEditors[mNum] ? "min-w-0 h-full overflow-y-auto" : ""}`}>
                     <div>
-                      <p className="text-xs font-semibold text-gray-500 mb-1.5">📋 미션 설명</p>
+                      <p className="text-xs font-semibold text-gray-500 mb-1.5">📋 {m.problem_type ? "문제 설명" : "미션 설명"}</p>
+                      {m.problem_type && <p className="text-xs font-semibold text-orange-700 mb-2">{m.problem_type === "fix" ? "유형: 기존 코드 수정 — 제공된 코드를 올바르게 수정하세요." : m.problem_type === "fill" ? "유형: 코드 빈칸 채우기 — ___ 부분을 완성하세요." : "유형: 직접 코드 작성 — 코드를 처음부터 작성하세요."}</p>}
                       <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{m.description}</p>
                     </div>
                     {m.input_condition && (
@@ -402,7 +403,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
                     <PythonCodeEditor
                       value={code}
                       onChange={v => { setCodes(c => ({ ...c, [mNum]: v })); setRunResults(r => ({ ...r, [mNum]: null })); }}
-                      defaultCode={m.default_code || `print("Hello CODA")`}
+                      defaultCode={m.default_code ?? `print("Hello CODA")`}
                       showRunButton={true}
                       onRun={data => handleRun(mNum, data)}
                       height={expandedEditors[mNum] ? "70vh" : "220px"}
