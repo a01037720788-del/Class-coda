@@ -13,6 +13,21 @@ const TYPE_OPTIONS = [
   { value: "fix", label: "기존 코드 수정", help: "오류가 있는 시작 코드를 제공하고 학생이 수정합니다." },
   { value: "fill", label: "코드 빈칸 채우기", help: "시작 코드에 ___ 빈칸을 넣고 학생이 해당 부분을 완성합니다." },
 ];
+const TYPE_GUIDES = {
+  write: { heading: "직접 코드 작성 문제", description: "문제 설명과 입출력 조건을 작성합니다. 학생에게는 빈 코드 편집기가 제공됩니다.", fields: ["description", "input_condition", "output_condition", "example", "answer_code", "default_stdin", "expected_output"] },
+  fix: { heading: "오류 코드 수정 문제", description: "일부러 오류가 있는 코드를 제공하고, 어떤 오류를 수정해야 하는지 설명합니다.", fields: ["description", "default_code", "input_condition", "output_condition", "example", "answer_code", "default_stdin", "expected_output"] },
+  fill: { heading: "코드 빈칸 채우기 문제", description: "완성되지 않은 코드에 ___ 표시를 넣습니다. 학생이 빈칸을 올바른 코드로 바꿉니다.", fields: ["description", "default_code", "input_condition", "output_condition", "example", "answer_code", "default_stdin", "expected_output"] },
+};
+const FIELD_DEFINITIONS = [
+  ["description", "문제 설명 *", "학생에게 보여줄 문제 내용을 입력하세요."],
+  ["input_condition", "입력 조건", "입력값의 범위와 형식"],
+  ["output_condition", "출력 조건", "출력해야 할 결과"],
+  ["example", "입력·출력 예시", "입력: ...\n출력: ..."],
+  ["default_code", "학생에게 제공할 코드 *", ""],
+  ["answer_code", "관리자용 정답 코드 (학생 비공개)", "정답 코드"],
+  ["default_stdin", "기본 입력값 (stdin)", "프로그램 실행 시 전달할 입력"],
+  ["expected_output", "예상 출력 결과 (자동 채점)", "예상 출력"],
+];
 const blankMission = () => ({ problem_type: "write", number: 1, title: "", description: "", default_code: "", expected_output: "", input_condition: "", output_condition: "", example: "", uses_input: false, default_stdin: "", grading_mode: "normalize", test_cases: [] });
 const problemNumber = (n) => `Q${String(n).padStart(3, "0")}`;
 const nextNumber = (items) => Math.max(0, ...items.map(u => Number(u.unit_number) || 0)) + 1;
@@ -56,6 +71,7 @@ export default function COSProblemManagement({ subject, subjectName }) {
     if (!title || !mission?.description?.trim()) { toast({ title: "문제 제목과 문제 설명을 입력하세요.", variant: "destructive" }); return; }
     if ((problemType === "fix" || problemType === "fill") && !String(mission.default_code || "").trim()) { toast({ title: "이 유형에는 학생에게 제공할 시작 코드가 필요합니다.", variant: "destructive" }); return; }
     if (problemType === "fill" && !String(mission.default_code || "").includes("___")) { toast({ title: "빈칸 채우기 문제의 시작 코드에는 ___ 표시를 하나 이상 넣어주세요.", variant: "destructive" }); return; }
+
     const n = Number(form.unit_number);
     if (items.some(i => Number(i.unit_number) === n && i.id !== editing?.id)) { toast({ title: "중복된 문제 번호입니다.", variant: "destructive" }); return; }
     const number = problemNumber(n);
@@ -67,7 +83,7 @@ export default function COSProblemManagement({ subject, subjectName }) {
       subtitle: form.subtitle || `${subjectName} 코딩 문제`,
       learning_objectives: form.learning_objectives || [], concept_sections: form.concept_sections || [],
       tables: form.tables || [], example_codes: form.example_codes || [], questions: form.questions || [],
-      missions: [{ ...mission, problem_type: problemType, number: 1, title: `${number}. ${title}` }], summary: form.summary || "",
+      missions: [{ ...mission, default_code: problemType === "write" ? "" : mission.default_code, problem_type: problemType, number: 1, title: `${number}. ${title}` }], summary: form.summary || "",
     };
     if (await persist(saved, editing ? "문제 수정 완료" : "문제 추가 완료")) setOpen(false);
   }
@@ -98,21 +114,18 @@ export default function COSProblemManagement({ subject, subjectName }) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {TYPE_OPTIONS.map(t => <button key={t.value} type="button"
                 className={`rounded-lg border p-3 text-left transition-colors ${ (form.missions?.[0]?.problem_type || "write") === t.value ? "border-orange-500 bg-orange-50" : "border-gray-200 bg-white hover:border-gray-400"}`}
-                onClick={() => setForm(f => ({...f, missions: [{...f.missions[0], problem_type: t.value, default_code: t.value === "write" && ["# 여기에 파이썬 코드를 작성하세요.\n", ""].includes(f.missions[0].default_code || "") ? "" : f.missions[0].default_code }]}))}>
+                onClick={() => setForm(f => ({...f, missions: [{...f.missions[0], problem_type: t.value }]}))}>
                 <p className="text-sm font-semibold">{t.label}</p><p className="text-xs text-gray-500 mt-1">{t.help}</p>
               </button>)}
             </div>
           </div>
-          {[
-            ["description", "문제 설명 *", "학생에게 보여줄 문제 내용을 입력하세요."],
-            ["input_condition", "입력 조건", "입력값의 범위와 형식"],
-            ["output_condition", "출력 조건", "출력해야 할 결과"],
-            ["example", "입력·출력 예시", "입력: ...\n출력: ..."],
-            ["default_code", "학생용 시작 코드", "# 여기에 코드를 작성하세요."],
-            ["answer_code", "관리자용 정답 코드 (학생 비공개)", "정답 코드"],
-            ["default_stdin", "기본 입력값 (stdin)", "프로그램 실행 시 전달할 입력"],
-            ["expected_output", "예상 출력 결과 (자동 채점)", "예상 출력"],
-          ].map(([field, label, placeholder]) => <div key={field}>
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm">
+            <p className="font-semibold text-orange-900">{TYPE_GUIDES[form.missions?.[0]?.problem_type || "write"].heading}</p>
+            <p className="mt-1 text-orange-800">{TYPE_GUIDES[form.missions?.[0]?.problem_type || "write"].description}</p>
+          </div>
+          {(form.missions?.[0]?.problem_type || "write") === "fix" && <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">예: <code>print(totle)</code>처럼 잘못된 변수명을 넣고, 문제 설명에 어떤 동작으로 수정해야 하는지 작성하세요.</div>}
+          {(form.missions?.[0]?.problem_type || "write") === "fill" && <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">예: <code>result = a + ___</code>처럼 빈칸을 표시하세요. 학생은 ___를 직접 코드로 바꿉니다.</div>}
+          {FIELD_DEFINITIONS.filter(([field]) => TYPE_GUIDES[form.missions?.[0]?.problem_type || "write"].fields.includes(field)).map(([field, label, placeholder]) => <div key={field}>
             <Label>{label}</Label>
             <Textarea className={field.includes("code") ? "font-mono mt-1" : "mt-1"} rows={field === "description" ? 5 : field.includes("code") ? 4 : 2}
               value={form.missions?.[0]?.[field] || ""} placeholder={field === "default_code" ? ((form.missions?.[0]?.problem_type || "write") === "fix" ? "# 학생이 수정할 오류 코드를 입력하세요." : (form.missions?.[0]?.problem_type || "write") === "fill" ? "result = ___\nprint(result)" : "학생은 빈 편집기에서 시작합니다.") : placeholder}
