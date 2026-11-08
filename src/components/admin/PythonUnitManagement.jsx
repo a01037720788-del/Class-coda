@@ -423,7 +423,7 @@ export default function PythonUnitManagement() {
                 <QuestionsEditor questions={form.questions} onChange={val => setForm(f => ({ ...f, questions: val }))} subject="python" />
               )}
               {activeTab === "missions" && (
-                <MissionsEditor missions={form.missions} onChange={val => setForm(f => ({ ...f, missions: val }))} />
+                <MissionsEditor missions={form.missions} onChange={val => setForm(f => ({ ...f, missions: val }))} subject="python" />
               )}
               {activeTab === "summary" && (
                 <SummaryEditor items={form.summary} onChange={val => setForm(f => ({ ...f, summary: val }))} />

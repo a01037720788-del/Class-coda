@@ -144,3 +144,6 @@ export function cleanupQuestions(questions, context) { return call("cleanupQuest
 
 /** 관리자 AI 설명 채우기 (Google Apps Script) */
 export function fillUnitDescription(prompt) { return call("fillUnitDescription", { prompt }); }
+
+/** 관리자 미션 AI 정리 및 시작/정답 코드 생성 */
+export function cleanupMissions(missions, subject) { return call("cleanupMissions", { missions, subject }); }

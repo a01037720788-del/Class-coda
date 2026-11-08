@@ -390,6 +390,7 @@ export default function CommonUnitManagement({ subjectType = "other", subjectId,
                   missions={form.missions}
                   onChange={val => setForm(f => ({ ...f, missions: val }))}
                   defaultCode={DEFAULT_CODE[subjectType]}
+                  subject={subjectType}
                 />
               )}
             </div>

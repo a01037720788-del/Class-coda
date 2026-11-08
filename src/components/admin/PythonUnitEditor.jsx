@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, ChevronDown, ChevronUp, Table, Code2, HelpCircle, Target, BookOpen, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import AIQuestionCleaner from "./AIQuestionCleaner";
+import AIMissionCleaner from "./AIMissionCleaner";
 import TestCasesEditor from "./TestCasesEditor";
 import RandomTestGenerator from "./RandomTestGenerator";
 import StdinSection from "./StdinSection";
@@ -647,7 +648,7 @@ export function QuestionsEditor({ questions = [], onChange, subject = "python" }
 }
 
 // ─── Missions Editor ─────────────────────────────────────────────────────────
-export function MissionsEditor({ missions = [], onChange, defaultCode = 'print("Hello CODA")' }) {
+export function MissionsEditor({ missions = [], onChange, defaultCode = 'print("Hello CODA")', subject = 'python' }) {
   const reindex = (arr) => arr.map((m, idx) => ({ ...m, number: idx + 1 }));
   const add = () => onChange(reindex([...missions, {
     number: missions.length + 1, title: "", description: "",
@@ -663,7 +664,7 @@ export function MissionsEditor({ missions = [], onChange, defaultCode = 'print("
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label className="flex items-center gap-1"><Target className="w-3.5 h-3.5" />Mission</Label>
-        <Button type="button" size="sm" variant="outline" onClick={add} className="h-7 text-xs"><Plus className="w-3 h-3 mr-1" />Mission 추가</Button>
+        <div className="flex gap-2 items-center"><AIMissionCleaner subject={subject} missions={missions} onChange={onChange} /><Button type="button" size="sm" variant="outline" onClick={add} className="h-7 text-xs"><Plus className="w-3 h-3 mr-1" />Mission 추가</Button></div>
       </div>
       {missions.map((m, i) => (
         <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
@@ -699,6 +700,7 @@ export function MissionsEditor({ missions = [], onChange, defaultCode = 'print("
             <Label className="text-xs text-gray-500">예상 출력 결과 (정답 비교용)</Label>
             <CodeTextarea value={m.expected_output} onChange={val => update(i, "expected_output", val)} placeholder={"Hello CODA"} rows={2} className="mt-1" />
           </div>
+          <div><Label className="text-xs text-gray-500">관리자용 정답 코드 (학생에게 비공개)</Label><CodeTextarea value={m.answer_code || ""} onChange={val => update(i, "answer_code", val)} rows={5} className="mt-1" placeholder="AI 정리 시 정답 코드가 자동 생성됩니다." /></div>
           <RandomTestGenerator mission={m} onChange={updated => { const arr = [...missions]; arr[i] = updated; onChange(arr); }} />
           <StdinSection
             code={m.default_code || ""}
