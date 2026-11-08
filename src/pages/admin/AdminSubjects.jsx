@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BookOpen } from "lucide-react";
-import COSProblemManagement from "@/components/admin/COSProblemManagement";
+import COSProblemManagement from './COSProblemManagement';
 import PythonUnitManagement from "@/components/admin/PythonUnitManagement";
 import JuniorPythonUnitManagement from "@/components/admin/JuniorPythonUnitManagement";
 import CppUnitManagement from "@/components/admin/CppUnitManagement";
