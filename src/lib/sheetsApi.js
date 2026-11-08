@@ -147,3 +147,8 @@ export function fillUnitDescription(prompt) { return call("fillUnitDescription",
 
 /** 관리자 미션 AI 정리 및 시작/정답 코드 생성 */
 export function cleanupMissions(missions, subject) { return call("cleanupMissions", { missions, subject }); }
+
+/** 로그인 세션을 사용해 Google Apps Script에 AI 채점을 요청합니다. */
+export function gradeCodeWithAI(payload) {
+  return call("gradeCodeWithAI", { grading: payload });
+}

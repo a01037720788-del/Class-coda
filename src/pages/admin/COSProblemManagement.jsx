@@ -28,7 +28,7 @@ const FIELD_DEFINITIONS = [
   ["default_stdin", "기본 입력값 (stdin)", "프로그램 실행 시 전달할 입력"],
   ["expected_output", "예상 출력 결과 (자동 채점)", "예상 출력"],
 ];
-const blankMission = () => ({ problem_type: "write", number: 1, title: "", description: "", default_code: "", expected_output: "", input_condition: "", output_condition: "", example: "", uses_input: false, default_stdin: "", grading_mode: "normalize", test_cases: [] });
+const blankMission = () => ({ problem_type: "write", number: 1, title: "", description: "", default_code: "", expected_output: "", input_condition: "", output_condition: "", example: "", uses_input: false, default_stdin: "", grading_mode: "normalize", ai_grading: false, ai_rubric: "", test_cases: [] });
 const problemNumber = (n) => `Q${String(n).padStart(3, "0")}`;
 const nextNumber = (items) => Math.max(0, ...items.map(u => Number(u.unit_number) || 0)) + 1;
 
@@ -132,6 +132,11 @@ export default function COSProblemManagement({ subject, subjectName }) {
               onChange={e => setForm(f => ({ ...f, missions: [{ ...f.missions[0], [field]: e.target.value }] }))} />
           </div>)}
           {(form.missions?.[0]?.problem_type || "write") !== "write" && <p className="text-xs text-orange-700">학생용 시작 코드에 {form.missions?.[0]?.problem_type === "fill" ? "___ 빈칸을 넣어주세요. 학생이 코드를 직접 수정해 완성합니다." : "일부러 잘못된 코드를 입력해 주세요. 학생이 해당 코드를 수정합니다."}</p>}
+          <div className="border rounded-lg p-3 bg-white space-y-2">
+            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={form.missions?.[0]?.ai_grading === true} onChange={e => setForm(f => ({...f, missions:[{...f.missions[0], ai_grading:e.target.checked}]}))}/>AI 코드 분석 및 자동 채점 사용 (COS PRO 전용)</label>
+            <p className="text-xs text-gray-600">테스트 케이스가 있으면 실행 결과를 우선 채점하고 AI는 피드백을 제공합니다. 테스트가 없으면 AI가 정답 여부를 판정합니다. Google Apps Script에 OPENAI_API_KEY 설정이 필요합니다.</p>
+            {form.missions?.[0]?.ai_grading && <><Label>AI 채점 기준 (관리자 전용)</Label><Textarea rows={3} value={form.missions?.[0]?.ai_rubric || ""} onChange={e => setForm(f => ({...f,missions:[{...f.missions[0],ai_rubric:e.target.value}]}))} placeholder="반드시 만족해야 하는 조건, 허용할 다른 풀이 등을 작성하세요."/></>}
+          </div>
           <div><Label>채점 방식</Label>
             <select className="mt-1 w-full border rounded-md p-2 bg-white" value={form.missions?.[0]?.grading_mode || "normalize"}
               onChange={e => setForm(f => ({ ...f, missions: [{ ...f.missions[0], grading_mode: e.target.value }] }))}>

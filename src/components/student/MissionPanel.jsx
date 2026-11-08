@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { runPython } from "@/lib/codeRunner";
+import { requestAiGrade } from "@/lib/aiGrader";
 import { saveMissionSubmission } from "@/lib/dataAccess";
 import { Button } from "@/components/ui/button";
 import { Send, CheckCircle2, ChevronDown, ChevronUp, ChevronsUpDown, Circle, Maximize2, Minimize2 } from "lucide-react";
@@ -97,6 +98,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
   const [submitting, setSubmitting] = useState({});
   // 미션별 제출 상태를 미션 번호(mNum) 기준으로 관리
   const [submitted, setSubmitted] = useState({});
+  const [aiFeedback, setAiFeedback] = useState({});
   // openIdx: 현재 열린 미션 인덱스 (null = 모두 접힘, 한 번에 하나만)
   const [openIdx, setOpenIdx] = useState(null);
   const [showCompleted, setShowCompleted] = useState(true);
@@ -161,7 +163,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
 
     try {
       let isCorrect = false;
-      let execResult = runResults[mNum];
+      let execResult = null;
       let output = "";
       let error = "";
       const expected = m.expected_output || "";
@@ -207,6 +209,27 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
         error = execResult?.error || "";
         isCorrect = expected ? (!error && compareOutput(output, expected, gradingMode, code)) : true;
       }
+
+      // AI 채점은 COS PRO에만 적용. 실행 테스트가 있으면 테스트 판정이 우선합니다.
+      const isCos = ["cos_pro_2", "cos_pro_3"].includes(unitType);
+      if (isCos && m.ai_grading === true) {
+        try {
+          const ai = await requestAiGrade({
+            code, problem_type: m.problem_type || "write", description: m.description,
+            input_condition: m.input_condition, output_condition: m.output_condition,
+            ai_rubric: m.ai_rubric, reference_code: m.answer_code,
+            output, error, tests_passed: testCases.length ? isCorrect : null,
+          });
+          setAiFeedback(prev => ({...prev, [mNum]: ai.feedback}));
+          if (testCases.length === 0) isCorrect = ai.is_correct === true && !error;
+        } catch (aiError) {
+          setAiFeedback(prev => ({...prev, [mNum]: `AI 채점 실패: ${aiError.message}`}));
+          // AI 단독 채점이 필요한 문제는 오류 시 정답으로 처리하지 않습니다.
+          if (testCases.length === 0) isCorrect = false;
+        }
+      }
+      // COS PRO 문제는 판정 근거가 없을 때 자동 정답 처리하지 않습니다.
+      if (isCos && !testCases.length && !expected && m.ai_grading !== true) isCorrect = false;
 
       // ── 2단계: DB 제출 저장 + 진행도 업데이트 (단일 RPC 트랜잭션) ────────
       const shouldUnlock = isCorrect === true;
@@ -419,9 +442,10 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
                         ? <><CheckCircle2 className="w-4 h-4" />다시 제출하기</>
                         : <><Send className="w-4 h-4" />{submitting[mNum] ? "제출 중..." : "제출하기"}</>}
                     </Button>
+                    {aiFeedback[mNum] && <div className="text-sm p-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 whitespace-pre-wrap"><strong>AI 피드백</strong><p className="mt-1 font-normal">{aiFeedback[mNum]}</p></div>}
                     {sub && (
                       <div className={`text-sm p-3 rounded-xl border font-semibold ${sub.isCorrect ? "bg-green-50 border-green-200 text-green-700" : "bg-yellow-50 border-yellow-200 text-yellow-700"}`}>
-                        {sub.isCorrect ? "🎉 정답! 미션 완료!" : "💡 예상 출력과 다릅니다. 다시 확인해 보세요."}
+                        {sub.isCorrect ? "🎉 정답! 미션 완료!" : "💡 정답 조건을 충족하지 못했습니다. 다시 확인해 보세요."}
                       </div>
                     )}
                     {runResult && m.expected_output && !sub && (
@@ -431,7 +455,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
                           : "bg-yellow-50 border-yellow-200 text-yellow-700"
                       }`}>
                         {(runResult.output || "").trim() === m.expected_output.trim() && !runResult.error
-                          ? "🎉 예상 출력과 일치합니다!" : "💡 예상 출력과 다릅니다. 다시 확인해 보세요."}
+                          ? "🎉 예상 출력과 일치합니다!" : "💡 정답 조건을 충족하지 못했습니다. 다시 확인해 보세요."}
                       </div>
                     )}
                   </div>
