@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 3000;
+const TOAST_REMOVE_DELAY = 4000; // 기본 알림 자동 닫힘 시간 (밀리초)
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -94,6 +94,10 @@ const listeners = [];
 let memoryState = { toasts: [] };
 
 function dispatch(action) {
+  if (action.type === actionTypes.DISMISS_TOAST || action.type === actionTypes.REMOVE_TOAST) {
+    if (action.toastId !== undefined) _clearFromRemoveQueue(action.toastId);
+    else Array.from(toastTimeouts.keys()).forEach(_clearFromRemoveQueue);
+  }
   memoryState = reducer(memoryState, action);
   listeners.forEach((listener) => {
     listener(memoryState);
@@ -123,6 +127,17 @@ function toast({ ...props }) {
       },
     },
   });
+
+  // 일반 알림은 4초 후 자동 닫힘. duration: Infinity는 자동 닫힘 제외.
+  // 컴포넌트 언마운트와 관계없이 기존 전역 toast 상태에서 정상 제거합니다.
+  const duration = props.duration === undefined ? TOAST_REMOVE_DELAY : Number(props.duration);
+  if (Number.isFinite(duration) && duration >= 0) {
+    const timeout = setTimeout(() => {
+      toastTimeouts.delete(id);
+      dismiss();
+    }, duration);
+    toastTimeouts.set(id, timeout);
+  }
 
   return {
     id,
