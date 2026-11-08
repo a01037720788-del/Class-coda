@@ -106,7 +106,7 @@ export default function StudentHome() {
                 <Link to={cfg.path} className={`flex items-center gap-3 p-3 ${a.bg} rounded-lg border ${a.border} hover:shadow-sm transition-all`}>
                   <div className={`w-10 h-10 ${a.ball} rounded-full flex items-center justify-center font-bold ${a.text} text-sm flex-shrink-0`}>{cur.unit_number}</div>
                   <div>
-                    <p className={`text-xs ${a.label} font-medium`}>현재 Unit</p>
+                    <p className={`text-xs ${a.label} font-medium`}>현재 {cfg.key.startsWith("cos_pro_") ? "문제" : "Unit"}</p>
                     <p className="font-semibold text-gray-900 text-sm">{cur.title}</p>
                     {(() => { const p = getProg(cur.id); return p && (
                       <div className="flex gap-2 mt-1">
@@ -122,7 +122,7 @@ export default function StudentHome() {
                 <Link to={cfg.path} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:shadow-sm transition-all">
                   <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-sm flex-shrink-0">{next.unit_number}</div>
                   <div>
-                    <p className="text-xs text-gray-400 font-medium">다음 Unit</p>
+                    <p className="text-xs text-gray-400 font-medium">다음 {cfg.key.startsWith("cos_pro_") ? "문제" : "Unit"}</p>
                     <p className="font-semibold text-gray-700 text-sm">{next.title}</p>
                   </div>
                 </Link>
@@ -130,13 +130,13 @@ export default function StudentHome() {
               {units.length > 0 && (
                 <div className="sm:col-span-2 flex items-center gap-2 pt-1">
                   <CheckCircle className={`w-4 h-4 ${a.icon}`} />
-                  <span className="text-xs text-gray-500">전체 {units.length}개 Unit 중{" "}
+                  <span className="text-xs text-gray-500">전체 {units.length}개 {cfg.key.startsWith("cos_pro_") ? "문제" : "Unit"} 중{" "}
                     <span className={`font-semibold ${a.label}`}>{doneCount}개 완료</span>
                   </span>
                 </div>
               )}
               {units.length === 0 && (
-                <div className="sm:col-span-2 text-sm text-gray-400 py-1">등록된 Unit이 없습니다.</div>
+                <div className="sm:col-span-2 text-sm text-gray-400 py-1">등록된 {cfg.key.startsWith("cos_pro_") ? "문제가" : "Unit이"} 없습니다.</div>
               )}
             </div>
           </div>

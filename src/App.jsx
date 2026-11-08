@@ -65,6 +65,8 @@ function App() {
               <Route path="settings" element={<StudentSettings />} />
               <Route path="python" element={<SubjectGuard subjectKey="Python"><StudentPythonUnits /></SubjectGuard>} />
               <Route path="junior-python" element={<SubjectGuard subjectKey="저학년 Python"><StudentJuniorPythonUnits /></SubjectGuard>} />
+              <Route path="cos-pro-3" element={<SubjectGuard subjectKey="COS PRO 3급"><StudentPythonUnits subject="cos_pro_3" subjectName="COS PRO 3급" /></SubjectGuard>} />
+              <Route path="cos-pro-2" element={<SubjectGuard subjectKey="COS PRO 2급"><StudentPythonUnits subject="cos_pro_2" subjectName="COS PRO 2급" /></SubjectGuard>} />
               <Route path="cpp" element={<SubjectGuard subjectKey="C++"><StudentCppUnits /></SubjectGuard>} />
               <Route path="*" element={<Navigate to="/student/home" replace />} />
             </Route>

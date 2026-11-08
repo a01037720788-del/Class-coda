@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { BookOpen } from "lucide-react";
+import COSProblemManagement from "@/components/admin/COSProblemManagement";
 import PythonUnitManagement from "@/components/admin/PythonUnitManagement";
 import JuniorPythonUnitManagement from "@/components/admin/JuniorPythonUnitManagement";
 import CppUnitManagement from "@/components/admin/CppUnitManagement";
@@ -10,8 +11,8 @@ const MANAGEMENT_BY_KEY = {
   python: PythonUnitManagement,
   junior_python: JuniorPythonUnitManagement,
   cpp: CppUnitManagement,
-  cos_pro_3: () => <PythonUnitManagement subject="cos_pro_3" subjectName="COS PRO 3급" />,
-  cos_pro_2: () => <PythonUnitManagement subject="cos_pro_2" subjectName="COS PRO 2급" />,
+  cos_pro_3: () => <COSProblemManagement subject="cos_pro_3" subjectName="COS PRO 3급" />,
+  cos_pro_2: () => <COSProblemManagement subject="cos_pro_2" subjectName="COS PRO 2급" />,
 };
 
 export default function AdminSubjects() {

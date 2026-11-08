@@ -38,12 +38,13 @@ export async function loadActiveUnitsFromRepo(subjectType) {
     .sort((a, b) => (a.unit_number || 0) - (b.unit_number || 0));
 }
 
-/** 과목별 단원 수 요약 (index.json) */
+/** 과목별 실제 단원 수. 관리자 저장분까지 포함하며 고정 index.json 숫자를 사용하지 않습니다. */
 export async function loadUnitsSummary() {
-  const res = await fetch(`${BASE}data/units/index.json`);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.subjects || [];
+  const { loadUnits } = await import("./dataAccess");
+  return Promise.all(VALID_SUBJECTS.map(async key => {
+    const units = await loadUnits(key);
+    return { key, units: units.length };
+  }));
 }
 
 export default { loadUnitsFromRepo, loadActiveUnitsFromRepo, loadUnitsSummary, isSupportedSubject };

@@ -40,6 +40,7 @@ function getUnitCompletion(unit, progress) {
 }
 
 export default function StudentPythonUnits({ subject = "python", subjectName = "Python" }) {
+  const isCOS = subject === "cos_pro_3" || subject === "cos_pro_2";
   const [units, setUnits] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [progresses, setProgresses] = useState([]);
@@ -117,7 +118,7 @@ export default function StudentPythonUnits({ subject = "python", subjectName = "
         <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm mb-5 overflow-hidden">
           <div className="bg-gradient-to-r from-green-600 to-green-500 px-6 py-5 text-white">
             <p className="text-sm font-medium opacity-80 mb-1">{subjectName}</p>
-            <h1 className="text-2xl font-bold">Unit {selectedUnit.unit_number}. {selectedUnit.title}</h1>
+            <h1 className="text-2xl font-bold">{isCOS ? "" : `Unit ${selectedUnit.unit_number}. `}{selectedUnit.title}</h1>
             {selectedUnit.subtitle && <p className="text-sm opacity-80 mt-1">{selectedUnit.subtitle}</p>}
           </div>
           {/* Progress bar */}
@@ -145,7 +146,7 @@ export default function StudentPythonUnits({ subject = "python", subjectName = "
             )}
             {isDone && (
               <Badge className="bg-green-100 text-green-700 border-0 gap-1 ml-auto">
-                <CheckCircle className="w-3 h-3" />Unit 완료!
+                <CheckCircle className="w-3 h-3" />{isCOS ? "문제 완료!" : "Unit 완료!"}
               </Badge>
             )}
           </div>
@@ -323,12 +324,12 @@ export default function StudentPythonUnits({ subject = "python", subjectName = "
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">{subjectName} 학습</h2>
-        <p className="text-gray-500 text-sm mt-1">Unit을 선택하여 학습을 시작하세요.</p>
+        <p className="text-gray-500 text-sm mt-1">{isCOS ? "문제를 선택하여 풀이를 시작하세요." : "Unit을 선택하여 학습을 시작하세요."}</p>
       </div>
       {units.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <BookOpen className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-400">등록된 Unit이 없습니다.</p>
+          <p className="text-gray-400">{isCOS ? "등록된 문제가 없습니다." : "등록된 Unit이 없습니다."}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -348,7 +349,7 @@ export default function StudentPythonUnits({ subject = "python", subjectName = "
                       {isDone ? <CheckCircle className="w-5 h-5 text-green-600" /> : unit.unit_number}
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 font-medium">{subjectName} Unit {unit.unit_number}.</p>
+                      <p className="text-xs text-gray-400 font-medium">{isCOS ? `${subjectName} 문제 ${String(unit.unit_number).padStart(3, "0")}` : `${subjectName} Unit ${unit.unit_number}.`}</p>
                       <p className="font-semibold text-gray-900">{unit.title}</p>
                       {unit.subtitle && <p className="text-xs text-gray-500 mt-0.5">{unit.subtitle}</p>}
                       {(exCount > 0 || qCount > 0 || mCount > 0) && (
