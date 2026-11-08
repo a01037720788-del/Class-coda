@@ -11,6 +11,8 @@ const SUBJECT_ALIASES = {
   junior_python: ["저학년python", "저학년파이썬", "juniorpython", "junior_python"],
   python:        ["python", "파이썬"],
   cpp:           ["c++", "cpp", "cplusplus", "씨플플", "씨쁠쁠"],
+  cos_pro_3: ["cos_pro_3", "cospro3", "cospro3급"],
+  cos_pro_2: ["cos_pro_2", "cospro2", "cospro2급"],
 };
 
 // 지원하는 과목 설정 (표시 순서)
@@ -18,6 +20,8 @@ export const SUBJECT_CONFIGS = [
   { key: "python",        label: "Python",        desc: "Python 프로그래밍 기초부터 실습까지",      path: "/student/python",        gradient: "from-green-600 to-emerald-500", accent: "green" },
   { key: "junior_python", label: "저학년 Python", desc: "초등 저학년을 위한 쉬운 Python 기초 과정", path: "/student/junior-python", gradient: "from-lime-500 to-green-400",    accent: "green" },
   { key: "cpp",           label: "C++",           desc: "C++ 문법과 알고리즘 실습",                path: "/student/cpp",           gradient: "from-blue-700 to-cyan-500",     accent: "cyan"  },
+  { key: "cos_pro_3", label: "COS PRO 3급", desc: "COS PRO 3급 Python 실습", path: "/student/cos-pro-3", gradient: "from-orange-500 to-amber-400", accent: "orange" },
+  { key: "cos_pro_2", label: "COS PRO 2급", desc: "COS PRO 2급 Python 문제 풀이", path: "/student/cos-pro-2", gradient: "from-violet-600 to-purple-500", accent: "violet" },
 ];
 
 /** 문자열 정규화 (소문자 + 특수문자 제거) */

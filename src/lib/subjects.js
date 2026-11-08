@@ -5,6 +5,8 @@ export const SIMPLE_SUBJECTS = [
   { key: "python", name: "Python" },
   { key: "junior_python", name: "저학년 Python" },
   { key: "cpp", name: "C++" },
+  { key: "cos_pro_3", name: "COS PRO 3급" },
+  { key: "cos_pro_2", name: "COS PRO 2급" },
 ];
 
 export const SIMPLE_SUBJECT_NAMES = SIMPLE_SUBJECTS.map(s => s.name);

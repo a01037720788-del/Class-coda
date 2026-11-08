@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { SIMPLE_SUBJECTS } from "@/lib/subjects";
+import { getSubjectType } from "@/utils/subjectAccess";
 
 const EMPTY = {
   name: "", login_id: "", password: "", grade: "", school_name: "",
@@ -28,7 +29,7 @@ export default function StudentFormModal({ open, onClose, student, onSubmit, sav
       grade: student.grade || "",
       school_name: student.school_name || "",
       is_active: student.is_active !== false,
-      subjects: student.subjects || [],
+      subjects: (student.subjects || []).map(v => SIMPLE_SUBJECTS.find(sub => sub.key === getSubjectType(v))?.name || v),
     } : EMPTY);
   }, [open, student]);
 

@@ -10,6 +10,8 @@ const MANAGEMENT_BY_KEY = {
   python: PythonUnitManagement,
   junior_python: JuniorPythonUnitManagement,
   cpp: CppUnitManagement,
+  cos_pro_3: () => <PythonUnitManagement subject="cos_pro_3" subjectName="COS PRO 3급" />,
+  cos_pro_2: () => <PythonUnitManagement subject="cos_pro_2" subjectName="COS PRO 2급" />,
 };
 
 export default function AdminSubjects() {
@@ -25,7 +27,7 @@ export default function AdminSubjects() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">과목 관리</h1>
-          <p className="text-xs text-gray-400">Python · 저학년 Python · C++ 3과목만 관리합니다.</p>
+          <p className="text-xs text-gray-400">Python · 저학년 Python · C++ · COS PRO 3급 · COS PRO 2급</p>
         </div>
       </div>
 

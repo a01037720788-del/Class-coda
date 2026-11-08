@@ -39,7 +39,7 @@ function getUnitCompletion(unit, progress) {
   };
 }
 
-export default function StudentPythonUnits() {
+export default function StudentPythonUnits({ subject = "python", subjectName = "Python" }) {
   const [units, setUnits] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [progresses, setProgresses] = useState([]);
@@ -55,12 +55,12 @@ export default function StudentPythonUnits() {
   }, []);
 
   const loadData = async (u) => {
-    const data = await loadUnits("python");
+    const data = await loadUnits(subject);
     setUnits(data);
     const sid = u?.student_id;
     if (sid) {
       const progs = await loadAllProgress(sid);
-      setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python" || (!p.unit_type && !p.subject_type && data.some(u => String(u.id) === String(p.unit_id)))));
+      setProgresses(progs.filter(p => p.unit_type === subject || p.subject_type === subject || (!p.unit_type && !p.subject_type && data.some(u => String(u.id) === String(p.unit_id)))));
     }
   };
 
@@ -78,7 +78,7 @@ export default function StudentPythonUnits() {
     const sid = getSid();
     if (!sid) return;
     const progs = await loadAllProgress(sid);
-    setProgresses(progs.filter(p => p.unit_type === "python" || p.subject_type === "python" || (!p.unit_type && !p.subject_type && units.some(u => String(u.id) === String(p.unit_id)))));
+    setProgresses(progs.filter(p => p.unit_type === subject || p.subject_type === subject || (!p.unit_type && !p.subject_type && units.some(u => String(u.id) === String(p.unit_id)))));
   };
 
   const handleSaveMemo = async () => {
@@ -116,7 +116,7 @@ export default function StudentPythonUnits() {
         {/* Header */}
         <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm mb-5 overflow-hidden">
           <div className="bg-gradient-to-r from-green-600 to-green-500 px-6 py-5 text-white">
-            <p className="text-sm font-medium opacity-80 mb-1">Python</p>
+            <p className="text-sm font-medium opacity-80 mb-1">{subjectName}</p>
             <h1 className="text-2xl font-bold">Unit {selectedUnit.unit_number}. {selectedUnit.title}</h1>
             {selectedUnit.subtitle && <p className="text-sm opacity-80 mt-1">{selectedUnit.subtitle}</p>}
           </div>
@@ -242,7 +242,7 @@ export default function StudentPythonUnits() {
                   user={user}
                   unitId={selectedUnit.id}
                   unitTitle={selectedUnit.title}
-                  unitType="python"
+                  unitType={subject}
                   progress={progress}
                   onProgressUpdate={refreshProgress}
                 />
@@ -257,7 +257,7 @@ export default function StudentPythonUnits() {
                   user={user}
                   unitId={selectedUnit.id}
                   unitTitle={selectedUnit.title}
-                  unitType="python"
+                  unitType={subject}
                   progress={progress}
                   onProgressUpdate={refreshProgress}
                 />
@@ -272,7 +272,7 @@ export default function StudentPythonUnits() {
                   user={user}
                   unitId={selectedUnit.id}
                   unitTitle={selectedUnit.title}
-                  unitType="python"
+                  unitType={subject}
                   progress={progress}
                   onProgressUpdate={refreshProgress}
                 />
@@ -322,7 +322,7 @@ export default function StudentPythonUnits() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Python 학습</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{subjectName} 학습</h2>
         <p className="text-gray-500 text-sm mt-1">Unit을 선택하여 학습을 시작하세요.</p>
       </div>
       {units.length === 0 ? (
@@ -348,7 +348,7 @@ export default function StudentPythonUnits() {
                       {isDone ? <CheckCircle className="w-5 h-5 text-green-600" /> : unit.unit_number}
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 font-medium">Python Unit {unit.unit_number}.</p>
+                      <p className="text-xs text-gray-400 font-medium">{subjectName} Unit {unit.unit_number}.</p>
                       <p className="font-semibold text-gray-900">{unit.title}</p>
                       {unit.subtitle && <p className="text-xs text-gray-500 mt-0.5">{unit.subtitle}</p>}
                       {(exCount > 0 || qCount > 0 || mCount > 0) && (

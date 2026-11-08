@@ -11,7 +11,7 @@
 const BASE = import.meta.env.BASE_URL || "/";
 const cache = new Map();
 
-const VALID_SUBJECTS = ["python", "junior_python", "cpp"];
+const VALID_SUBJECTS = ["python", "junior_python", "cpp", "cos_pro_3", "cos_pro_2"];
 
 export function isSupportedSubject(subjectType) {
   return VALID_SUBJECTS.includes(subjectType);

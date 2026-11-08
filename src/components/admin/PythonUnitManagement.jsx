@@ -38,7 +38,7 @@ const emptyForm = {
   is_active: true,
 };
 
-export default function PythonUnitManagement() {
+export default function PythonUnitManagement({ subject = "python", subjectName = "Python" }) {
   const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -53,7 +53,7 @@ export default function PythonUnitManagement() {
   const loadUnits = async () => {
     setLoading(true);
     try {
-      const data = await loadAllUnits("python");
+      const data = await loadAllUnits(subject);
       // unit_number 기준 오름차순 정렬
       const sorted = [...(data || [])].sort((a, b) => (a.unit_number || 0) - (b.unit_number || 0));
       setUnits(sorted);
@@ -69,7 +69,7 @@ export default function PythonUnitManagement() {
   const handleReorder = async (newOrder) => {
     const numbered = newOrder.map((u,i) => ({...u, unit_number:i+1}));
     try {
-      for (const unit of numbered) await saveUnit("python", unit);
+      for (const unit of numbered) await saveUnit(subject, unit);
       await loadUnits();
     } catch(err) { toast({title:"순서 저장 실패",description:err.message,variant:"destructive"}); await loadUnits(); }
   };
@@ -168,10 +168,10 @@ export default function PythonUnitManagement() {
 
     try {
       if (editingUnit) {
-        await saveUnit("python", { ...editingUnit, ...saveData });
+        await saveUnit(subject, { ...editingUnit, ...saveData });
         toast({ title: "수정 완료", description: `Unit ${saveData.unit_number}. ${saveData.title}` });
       } else {
-        await saveUnit("python", { ...saveData, id: `python-unit-${saveData.unit_number}-${Date.now()}` });
+        await saveUnit(subject, { ...saveData, id: `${subject}-unit-${saveData.unit_number}-${Date.now()}` });
         toast({ title: "Unit 추가 완료", description: `Unit ${saveData.unit_number}. ${saveData.title}` });
       }
       await loadUnits();
@@ -195,7 +195,7 @@ export default function PythonUnitManagement() {
   const handleDelete = async (u) => {
     if (!confirm(`Unit ${u.unit_number}. ${u.title} 을(를) 삭제하시겠습니까?`)) return;
     try {
-      await saveUnit("python", { ...u, is_active: false });
+      await saveUnit(subject, { ...u, is_active: false });
       toast({ title: "삭제 완료" });
       loadUnits();
     } catch (err) {
@@ -206,7 +206,7 @@ export default function PythonUnitManagement() {
 
   const toggleActive = async (u) => {
     try {
-      await saveUnit("python", { ...u, is_active: !(u.is_active !== false) });
+      await saveUnit(subject, { ...u, is_active: !(u.is_active !== false) });
       loadUnits();
     } catch (err) {
       toast({ title: "상태 변경 실패", description: err.message, variant: "destructive" });
@@ -261,11 +261,11 @@ export default function PythonUnitManagement() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-green-600" />
-          <h4 className="font-bold text-gray-900">Python Unit 관리</h4>
+          <h4 className="font-bold text-gray-900">{subjectName} Unit 관리</h4>
           <Badge variant="outline" className="text-xs">{units.length}개</Badge>
         </div>
         <div className="flex gap-2">
-          <PythonToCppConverter />
+          {subject === "python" && <PythonToCppConverter />}
           <Button onClick={openAdd} size="sm" className="bg-green-600 hover:bg-green-700">
             <Plus className="w-3.5 h-3.5 mr-1" />Unit 추가
           </Button>
@@ -279,7 +279,7 @@ export default function PythonUnitManagement() {
       )}
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="python-units">
+        <Droppable droppableId={`${subject}-units`}>
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
               {loading && (
@@ -333,7 +333,7 @@ export default function PythonUnitManagement() {
                         <Button variant="ghost" size="sm" onClick={() => openEdit(u)} className="h-7 w-7 p-0" disabled={reordering}>
                           <Edit className="w-3.5 h-3.5" />
                         </Button>
-                        <TeachingButton subjectType="python" unitId={u.id} disabled={reordering} />
+                        <TeachingButton subjectType={subject} unitId={u.id} disabled={reordering} />
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(u)} className="h-7 w-7 p-0 text-red-500 hover:bg-red-50" disabled={reordering}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -377,12 +377,12 @@ export default function PythonUnitManagement() {
             {/* AI로 Unit 전체 생성 — 항상 표시 */}
             <div className="border border-purple-200 rounded-lg p-3 bg-purple-50/50">
               <p className="text-xs text-purple-700 mb-2 font-medium">🤖 AI로 Unit 전체를 자동 생성할 수 있습니다</p>
-              <AIUnitGenerator subject="python" subjectName="Python" previousUnits={units} currentForm={form} onApply={handleApplyAIGeneratedUnit} />
+              <AIUnitGenerator subject={subject} subjectName={subjectName} previousUnits={units} currentForm={form} onApply={handleApplyAIGeneratedUnit} />
             </div>
 
             {/* AI 개별 섹션 생성 */}
             <AIUnitAssistant
-              subject="python"
+              subject={subject}
               unitTitle={form.title}
               unitContent={form}
               previousUnits={units}
@@ -420,10 +420,10 @@ export default function PythonUnitManagement() {
                 <ExampleCodesEditor codes={form.example_codes} onChange={val => setForm(f => ({ ...f, example_codes: val }))} />
               )}
               {activeTab === "questions" && (
-                <QuestionsEditor questions={form.questions} onChange={val => setForm(f => ({ ...f, questions: val }))} subject="python" />
+                <QuestionsEditor questions={form.questions} onChange={val => setForm(f => ({ ...f, questions: val }))} subject={subject} />
               )}
               {activeTab === "missions" && (
-                <MissionsEditor missions={form.missions} onChange={val => setForm(f => ({ ...f, missions: val }))} subject="python" />
+                <MissionsEditor missions={form.missions} onChange={val => setForm(f => ({ ...f, missions: val }))} subject={subject} />
               )}
               {activeTab === "summary" && (
                 <SummaryEditor items={form.summary} onChange={val => setForm(f => ({ ...f, summary: val }))} />

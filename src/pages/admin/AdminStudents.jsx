@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Pencil, Users, Loader2 } from "lucide-react";
 import StudentFormModal from "@/components/admin/StudentFormModal";
 import { useToast } from "@/components/ui/use-toast";
-import { SIMPLE_SUBJECT_NAMES } from "@/lib/subjects";
+import { SIMPLE_SUBJECT_NAMES, SIMPLE_SUBJECTS } from "@/lib/subjects";
+import { getSubjectType } from "@/utils/subjectAccess";
 
 function displaySubjects(student) {
-  const fromArray = (student.subjects || []).filter(s => SIMPLE_SUBJECT_NAMES.includes(s));
+  const fromArray = (student.subjects || []).map(s => SIMPLE_SUBJECTS.find(x => x.key === getSubjectType(s))?.name || s).filter(s => SIMPLE_SUBJECT_NAMES.includes(s));
   if (fromArray.length > 0) return fromArray;
   return Object.entries(student.subject_permissions || {})
     .filter(([, v]) => v)
@@ -51,7 +52,7 @@ export default function AdminStudents() {
     setSaving(true);
     try {
       const caller_login_id = getSessionUser()?.login_id || null;
-      const names = form.subjects;
+      const names = form.subjects.map(name => SIMPLE_SUBJECTS.find(s => s.name === name)?.key || name);
       const perms = Object.fromEntries(names.map(n => [n, true]));
 
       // 로그인 아이디 중복 검사

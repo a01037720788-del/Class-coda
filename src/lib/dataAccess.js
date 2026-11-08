@@ -47,7 +47,7 @@ async function mergeStudentUnits(subjectType) {
 }
 
 export async function loadUnits(subjectType, { metadataOnly = false } = {}) {
-  if (!["python", "junior_python", "cpp"].includes(subjectType)) return [];
+  if (!["python", "junior_python", "cpp", "cos_pro_3", "cos_pro_2"].includes(subjectType)) return [];
   try {
     const units = await mergeStudentUnits(subjectType);
     return units.filter(unit => unit.is_active !== false).map(unit => ({
@@ -84,7 +84,7 @@ export async function loadAllUnitsWithSource(subjectType) {
 
 // ─── 단일 Unit 전체 콘텐츠 로드 (수정 화면용) ─────────────────
 export async function loadUnitContent(unitId) {
-  for (const type of ["python", "junior_python", "cpp"]) {
+  for (const type of ["python", "junior_python", "cpp", "cos_pro_3", "cos_pro_2"]) {
     const units = await loadAllUnits(type);
     const unit = units.find(u => String(u.id) === String(unitId));
     if (unit) return unit;
@@ -93,7 +93,7 @@ export async function loadUnitContent(unitId) {
 }
 
 export async function saveUnit(subjectType, unit) {
-  if (!["python", "junior_python", "cpp"].includes(subjectType)) throw new Error("지원하지 않는 과목입니다.");
+  if (!["python", "junior_python", "cpp", "cos_pro_3", "cos_pro_2"].includes(subjectType)) throw new Error("지원하지 않는 과목입니다.");
   if (!unit?.id || !String(unit.title || "").trim()) throw new Error("단원 ID와 제목이 필요합니다.");
   return adminSaveUnitOverride(subjectType, unit);
 }
@@ -114,7 +114,7 @@ export async function deleteSubmissionsByUnit(...args) { throw new Error("단원
 
 // ─── 학습 기록: Google Sheets / Apps Script ────────────────────────────────
 // 세 과목의 JSON 단원 ID를 사용해 서버에서 요구하는 subject를 찾습니다.
-const CODA_SUBJECTS = ["python", "junior_python", "cpp"];
+const CODA_SUBJECTS = ["python", "junior_python", "cpp", "cos_pro_3", "cos_pro_2"];
 let unitSubjectIndexPromise;
 async function unitSubjectIndex() {
   if (!unitSubjectIndexPromise) {
@@ -392,6 +392,8 @@ export async function loadActiveSubjects() {
     { id: "python", name: "Python", type: "python", is_active: true, color: "#3B82F6" },
     { id: "junior_python", name: "저학년 Python", type: "junior_python", is_active: true, color: "#84CC16" },
     { id: "cpp", name: "C++", type: "cpp", is_active: true, color: "#2563EB" },
+    { id: "cos_pro_3", name: "COS PRO 3급", type: "cos_pro_3", is_active: true, color: "#F59E0B" },
+    { id: "cos_pro_2", name: "COS PRO 2급", type: "cos_pro_2", is_active: true, color: "#7C3AED" },
   ];
 }
 
@@ -400,6 +402,8 @@ export async function loadAllSubjects() {
     { id: "python", name: "Python", type: "python", is_active: true, color: "#3B82F6" },
     { id: "junior_python", name: "저학년 Python", type: "junior_python", is_active: true, color: "#84CC16" },
     { id: "cpp", name: "C++", type: "cpp", is_active: true, color: "#2563EB" },
+    { id: "cos_pro_3", name: "COS PRO 3급", type: "cos_pro_3", is_active: true, color: "#F59E0B" },
+    { id: "cos_pro_2", name: "COS PRO 2급", type: "cos_pro_2", is_active: true, color: "#7C3AED" },
   ];
 }
 
@@ -408,6 +412,8 @@ export async function loadAllSubjectsAdmin() {
     { id: "python", name: "Python", type: "python", is_active: true, color: "#3B82F6" },
     { id: "junior_python", name: "저학년 Python", type: "junior_python", is_active: true, color: "#84CC16" },
     { id: "cpp", name: "C++", type: "cpp", is_active: true, color: "#2563EB" },
+    { id: "cos_pro_3", name: "COS PRO 3급", type: "cos_pro_3", is_active: true, color: "#F59E0B" },
+    { id: "cos_pro_2", name: "COS PRO 2급", type: "cos_pro_2", is_active: true, color: "#7C3AED" },
   ];
 }
 
