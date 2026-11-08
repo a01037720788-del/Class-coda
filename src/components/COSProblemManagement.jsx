@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { loadAllUnits, saveUnit } from "@/lib/dataAccess";
-import { MissionsEditor } from "@/components/admin/PythonUnitEditor";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,8 +84,36 @@ export default function COSProblemManagement({ subject, subjectName }) {
     <Dialog open={open} onOpenChange={v => { if (!saving) setOpen(v); }}><DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editing ? "문제 수정" : "문제 추가"} — {subjectName}</DialogTitle></DialogHeader>
       {form && <div className="space-y-4"><p className="text-sm font-semibold text-orange-600">문제 번호: {problemNumber(form.unit_number)} (자동 부여)</p>
         <div><Label>문제 제목 *</Label><Input value={form.title} onChange={e => setForm(f => ({...f,title:e.target.value}))} placeholder="문제 제목" /></div>
-        <div><Label>문제 설명 · 입력/출력 · 코드 · 채점 설정 *</Label><p className="text-xs text-gray-500 mb-2">각 문제에는 하나의 코딩 미션이 연결됩니다. 아래에서 문제와 테스트 케이스를 설정하세요.</p>
-          <MissionsEditor subject={subject} missions={form.missions} onChange={missions => setForm(f => ({...f, missions: missions.slice(0,1)}))} defaultCode="# 여기에 파이썬 코드를 작성하세요." />
+        <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
+          <h3 className="font-semibold">문제 내용</h3>
+          {[
+            ["description", "문제 설명 *", "학생에게 보여줄 문제 내용을 입력하세요."],
+            ["input_condition", "입력 조건", "입력값의 범위와 형식"],
+            ["output_condition", "출력 조건", "출력해야 할 결과"],
+            ["example", "입력·출력 예시", "입력: ...\n출력: ..."],
+            ["default_code", "학생용 시작 코드", "# 여기에 코드를 작성하세요."],
+            ["answer_code", "관리자용 정답 코드 (학생 비공개)", "정답 코드"],
+            ["default_stdin", "기본 입력값 (stdin)", "프로그램 실행 시 전달할 입력"],
+            ["expected_output", "예상 출력 결과 (자동 채점)", "예상 출력"],
+          ].map(([field, label, placeholder]) => <div key={field}>
+            <Label>{label}</Label>
+            <Textarea className={field.includes("code") ? "font-mono mt-1" : "mt-1"} rows={field === "description" ? 5 : field.includes("code") ? 4 : 2}
+              value={form.missions?.[0]?.[field] || ""} placeholder={placeholder}
+              onChange={e => setForm(f => ({ ...f, missions: [{ ...f.missions[0], [field]: e.target.value }] }))} />
+          </div>)}
+          <div><Label>채점 방식</Label>
+            <select className="mt-1 w-full border rounded-md p-2 bg-white" value={form.missions?.[0]?.grading_mode || "normalize"}
+              onChange={e => setForm(f => ({ ...f, missions: [{ ...f.missions[0], grading_mode: e.target.value }] }))}>
+              <option value="normalize">공백·줄바꿈 정규화 후 비교</option><option value="exact">정확히 비교</option>
+            </select>
+          </div>
+          <div className="space-y-2"><div className="flex items-center justify-between"><Label>추가 테스트 케이스</Label>
+            <Button type="button" variant="outline" size="sm" onClick={() => setForm(f => ({...f, missions:[{...f.missions[0], test_cases:[...(f.missions[0].test_cases || []), {input:"", expected_output:""}]}]}))}><Plus className="w-3 h-3 mr-1"/>테스트 추가</Button></div>
+            {(form.missions?.[0]?.test_cases || []).map((test,i) => <div key={i} className="border rounded-md p-2 bg-white space-y-2">
+              <div className="flex justify-between items-center text-xs font-semibold">테스트 {i+1}<Button type="button" size="sm" variant="ghost" onClick={() => setForm(f => ({...f, missions:[{...f.missions[0], test_cases:f.missions[0].test_cases.filter((_,j)=>i!==j)}]}))}>삭제</Button></div>
+              {[["input","입력"],["expected_output","예상 출력"]].map(([key,label]) => <div key={key}><Label>{label}</Label><Textarea className="font-mono" rows={2} value={test[key] || ""} onChange={e => setForm(f => ({...f, missions:[{...f.missions[0],test_cases:f.missions[0].test_cases.map((t,j)=>j===i?{...t,[key]:e.target.value}:t)}]}))}/></div>)}
+            </div>)}
+          </div>
         </div>
         <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>취소</Button><Button onClick={save} disabled={saving}>{saving ? "저장 중..." : "문제 저장"}</Button></div>
       </div>}
