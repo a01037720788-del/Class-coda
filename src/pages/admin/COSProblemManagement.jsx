@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { loadAllUnits, saveUnit } from "@/lib/dataAccess";
+import { adminClassifyCOSProblems } from "@/lib/sheetsApi";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Plus, Pencil, Eye, EyeOff, Trash2, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const TYPE_OPTIONS = [
@@ -39,6 +40,10 @@ export default function COSProblemManagement({ subject, subjectName }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [classifying, setClassifying] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [suggestions, setSuggestions] = useState({});
+  const [sortBy, setSortBy] = useState("number");
   const { toast } = useToast();
   async function refresh() {
     setLoading(true);
@@ -91,15 +96,78 @@ export default function COSProblemManagement({ subject, subjectName }) {
     if (!active && !window.confirm(`${item.title} 문제를 비공개 처리할까요? 기존 제출 기록은 유지됩니다.`)) return;
     await persist({ ...item, is_active: active }, active ? "문제 공개 완료" : "문제 비공개 완료");
   }
+  async function classifyAll() {
+    if (!items.length) return;
+    setClassifying(true);
+    try {
+      const next = {};
+      for (let offset = 0; offset < items.length; offset += 20) {
+        const batch = items.slice(offset, offset + 20).map(item => ({
+          id: item.id, title: item.title,
+          description: item.missions?.[0]?.description || "",
+          default_code: item.missions?.[0]?.default_code || "",
+          problem_type: item.missions?.[0]?.problem_type || item.problem_type || "write",
+        }));
+        const response = await adminClassifyCOSProblems(subject, batch);
+        (response.results || []).forEach(result => { next[result.id] = result; });
+      }
+      setSuggestions(next);
+      toast({ title: "AI 분류 완료", description: `${Object.keys(next).length}개 문제를 분석했습니다. 저장 전 결과를 확인하세요.` });
+    } catch (e) { toast({ title: "AI 분류 실패", description: e.message, variant: "destructive" }); }
+    finally { setClassifying(false); }
+  }
+  async function applySuggestions() {
+    const targets = items.filter(item => suggestions[item.id]);
+    if (!targets.length) return;
+    if (!window.confirm(`${targets.length}개 문제에 AI 분류를 저장할까요? 문제 번호와 ID는 변경하지 않습니다.`)) return;
+    setApplying(true);
+    let saved = 0;
+    try {
+      for (const item of targets) {
+        const suggestion = suggestions[item.id];
+        // 문제 유형은 AI가 제안만 합니다. 학생 시작 코드와의 호환성을 위해 자동 변경하지 않습니다.
+        await saveUnit(subject, {
+          ...item,
+          ai_category: suggestion.category,
+          ai_difficulty: suggestion.difficulty,
+          ai_classified_at: new Date().toISOString(),
+        });
+        saved++;
+      }
+      setSuggestions({});
+      await refresh();
+      toast({ title: "분류 저장 완료", description: `${saved}개 문제에 분류 정보를 저장했습니다.` });
+    } catch (e) {
+      await refresh();
+      toast({ title: "일부 저장 실패", description: `${saved}개 저장 후 중단: ${e.message}`, variant: "destructive" });
+    } finally { setApplying(false); }
+  }
+  const difficultyOrder = {"쉬움":0,"보통":1,"어려움":2};
+  const orderedItems = [...items].sort((a,b) => {
+    const av = suggestions[a.id] || a, bv = suggestions[b.id] || b;
+    if (sortBy === "category") return String(av.category || av.ai_category || "기타").localeCompare(String(bv.category || bv.ai_category || "기타"), "ko") || a.unit_number - b.unit_number;
+    if (sortBy === "difficulty") return (difficultyOrder[av.difficulty || av.ai_difficulty] ?? 3) - (difficultyOrder[bv.difficulty || bv.ai_difficulty] ?? 3) || a.unit_number - b.unit_number;
+    if (sortBy === "type") return String(a.missions?.[0]?.problem_type || a.problem_type || "write").localeCompare(String(b.missions?.[0]?.problem_type || b.problem_type || "write")) || a.unit_number - b.unit_number;
+    return a.unit_number - b.unit_number;
+  });
   const visibleCount = items.filter(i => i.is_active !== false).length;
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="text-lg font-bold">{subjectName} 문제 관리</h2><p className="text-sm text-gray-500">전체 {items.length}문제 · 공개 {visibleCount}문제 · 문제 개수 자동 계산</p></div>
-      <Button onClick={add}><Plus className="w-4 h-4 mr-1" />문제 추가</Button>
+      <div className="flex flex-wrap gap-2 items-center">
+        <select aria-label="문제 정렬 기준" className="border rounded-md px-3 py-2 text-sm bg-white" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="number">문제 번호순</option><option value="category">학습 주제순</option><option value="difficulty">난이도순</option><option value="type">문제 유형순</option>
+        </select>
+        <Button variant="outline" onClick={classifyAll} disabled={loading || classifying || applying || !items.length}><Sparkles className="w-4 h-4 mr-1" />{classifying ? "AI 분석 중..." : "AI 자동 분류"}</Button>
+        {Object.keys(suggestions).length > 0 && <Button onClick={applySuggestions} disabled={applying || classifying}>{applying ? "저장 중..." : `분류 결과 저장 (${Object.keys(suggestions).length})`}</Button>}
+        <Button onClick={add}><Plus className="w-4 h-4 mr-1" />문제 추가</Button>
+      </div>
     </div>
     {loading ? <p className="text-gray-500">문제 목록을 불러오는 중입니다...</p> : items.length === 0 ? <p className="border rounded-lg p-8 text-center text-gray-500">등록된 문제가 없습니다. 문제 추가 버튼을 눌러주세요.</p> :
-      <div className="space-y-2">{[...items].sort((a,b) => a.unit_number-b.unit_number).map(item => <div key={item.id} className="border rounded-lg bg-white p-3 flex flex-wrap items-center justify-between gap-3">
-        <div><p className="font-semibold">{item.title}</p><p className="text-xs text-gray-500">{item.is_active === false ? "비공개" : "공개"} · {TYPE_OPTIONS.find(t => t.value === (item.missions?.[0]?.problem_type || item.problem_type || "write"))?.label} · {item.missions?.[0]?.description?.slice(0, 75) || "문제 설명 없음"}</p></div>
+      <div className="space-y-2">{orderedItems.map(item => <div key={item.id} className="border rounded-lg bg-white p-3 flex flex-wrap items-center justify-between gap-3">
+        <div><p className="font-semibold">{item.title}</p>
+          <p className="text-xs mt-1 text-indigo-700">{(suggestions[item.id] || item).category || item.ai_category || "미분류"} · {(suggestions[item.id] || item).difficulty || item.ai_difficulty || "난이도 미설정"}{suggestions[item.id] ? " · AI 제안 (미저장)" : ""}</p>
+          {suggestions[item.id]?.reason && <p className="text-xs text-gray-500 mt-1">AI 분석: {suggestions[item.id].reason} · 추천 유형: {TYPE_OPTIONS.find(t => t.value === suggestions[item.id].problem_type)?.label || "직접 코드 작성"}</p>}<p className="text-xs text-gray-500">{item.is_active === false ? "비공개" : "공개"} · {TYPE_OPTIONS.find(t => t.value === (item.missions?.[0]?.problem_type || item.problem_type || "write"))?.label} · {item.missions?.[0]?.description?.slice(0, 75) || "문제 설명 없음"}</p></div>
         <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => modify(item)}><Pencil className="w-3 h-3 mr-1" />수정</Button>
           <Button size="sm" variant="outline" onClick={() => setActive(item, item.is_active === false)}>{item.is_active === false ? <Eye className="w-3 h-3 mr-1"/> : <EyeOff className="w-3 h-3 mr-1"/>}{item.is_active === false ? "공개" : "비공개"}</Button>
           <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setActive(item, false)} disabled={item.is_active === false}><Trash2 className="w-3 h-3 mr-1"/>삭제</Button>

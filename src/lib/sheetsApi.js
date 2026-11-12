@@ -152,3 +152,6 @@ export function cleanupMissions(missions, subject) { return call("cleanupMission
 export function gradeCodeWithAI(payload) {
   return call("gradeCodeWithAI", { grading: payload });
 }
+
+/** COS PRO 문제 AI 분류: 관리자 세션 필수, 한 번에 최대 20개 */
+export function adminClassifyCOSProblems(subject, problems) { return call("adminClassifyCOSProblems", { subject, problems }); }
