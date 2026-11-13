@@ -160,3 +160,8 @@ export function adminClassifyCOSProblems(subject, problems) { return call("admin
 export function generateAIContent({subject, actionType, prompt, schema}) {
   return call("generateAIContent", {subject, action_type: actionType, prompt, schema});
 }
+
+/** 관리자 Python → C++17 전체 단원 AI 변환 (저장은 별도 수행) */
+export function convertPythonUnit({ prompt }) {
+  return call("convertPythonUnit", { prompt });
+}

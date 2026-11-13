@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { loadAllUnits, saveUnit } from "@/lib/dataAccess";
+import { convertPythonUnit } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -18,8 +19,8 @@ export default function PythonToCppConverter() {
 
   const loadData = async () => {
     const [py, cpp] = await Promise.all([
-      base44.entities.PythonUnit.list("unit_number"),
-      base44.entities.CppUnit.list("unit_number"),
+      loadAllUnits("python"),
+      loadAllUnits("cpp"),
     ]);
     setPythonUnits(py);
     setCppUnits(cpp);
@@ -34,8 +35,8 @@ export default function PythonToCppConverter() {
 
   const cppExists = (unitNumber) => cppUnits.some(u => u.unit_number === unitNumber);
 
-  const handleConvert = async (pyUnit) => {
-    if (cppExists(pyUnit.unit_number)) {
+  const handleConvert = async (pyUnit, { confirmed = false } = {}) => {
+    if (!confirmed && cppExists(pyUnit.unit_number)) {
       const ok = window.confirm(
         `이미 C++ Unit ${pyUnit.unit_number}이(가) 존재합니다. 덮어쓰시겠습니까?`
       );
@@ -120,38 +121,32 @@ ${JSON.stringify(pyUnit, null, 2)}
 - 개념 설명은 "Python의 X == C++의 Y" 형태로 비교 설명 포함
 - 모든 코드는 실제로 컴파일/실행 가능해야 함`;
 
-      const cppData = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            unit_number: { type: "number" },
-            title: { type: "string" },
-            subtitle: { type: "string" },
-            concept_sections: { type: "array", items: { type: "object" } },
-            tables: { type: "array", items: { type: "object" } },
-            example_codes: { type: "array", items: { type: "object" } },
-            questions: { type: "array", items: { type: "object" } },
-            missions: { type: "array", items: { type: "object" } },
-            is_active: { type: "boolean" }
-          }
-        }
-      });
-
-      // 기존 C++ Unit 덮어쓰기 처리
-      const existing = cppUnits.find(u => u.unit_number === pyUnit.unit_number);
-      if (existing) {
-        await base44.entities.CppUnit.update(existing.id, cppData);
-      } else {
-        await base44.entities.CppUnit.create(cppData);
+      // AI는 변환 콘텐츠만 생성하며, 단원 ID와 번호는 원본/기존 단원 기준으로 고정합니다.
+      const converted = await convertPythonUnit({ prompt });
+      if (!converted || typeof converted !== "object" || Array.isArray(converted)) {
+        throw new Error("AI 변환 결과가 올바르지 않습니다.");
       }
+      const existing = cppUnits.find(u => Number(u.unit_number) === Number(pyUnit.unit_number));
+      const cppData = {
+        ...converted,
+        id: existing?.id || `cpp-unit-${pyUnit.unit_number}`,
+        unit_number: Number(pyUnit.unit_number),
+        is_active: existing ? existing.is_active !== false : true,
+      };
+      if (!cppData.title?.trim()) throw new Error("변환된 단원 제목이 없습니다.");
+      if (JSON.stringify(cppData).length > 45000) {
+        throw new Error("변환된 단원 데이터가 45,000자를 초과합니다. 단원을 나누어 변환해 주세요.");
+      }
+      await saveUnit("cpp", cppData);
 
       setResult({ success: true, unit: cppData });
       toast({ title: `C++ Unit ${pyUnit.unit_number} 변환 완료!` });
       await loadData();
+      return true;
     } catch (err) {
       setResult({ success: false, error: err.message });
       toast({ title: "변환 실패", description: err.message, variant: "destructive" });
+      return false;
     } finally {
       setConverting(false);
       setSelectedUnit(null);
@@ -171,10 +166,11 @@ ${JSON.stringify(pyUnit, null, 2)}
       : `모든 Python Unit(${targets.length}개)을 C++로 변환합니다. 기존 C++ Unit은 덮어씁니다.`;
     if (!window.confirm(msg)) return;
 
+    let success = 0;
     for (const unit of targets) {
-      await handleConvert(unit);
+      if (await handleConvert(unit, { confirmed: true })) success++;
     }
-    toast({ title: "전체 변환 완료!" });
+    toast({ title: "전체 변환 결과", description: `성공 ${success}개 / 실패 ${targets.length - success}개` });
   };
 
   return (
