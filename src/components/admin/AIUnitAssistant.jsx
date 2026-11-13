@@ -11,7 +11,7 @@
  *   onApplyMissions: (missions[]) => void
  */
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { generateAIContent } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Wand2, BookOpen, Table, Code2, HelpCircle, Target, X, Loader2, ShieldCheck, ShieldX } from "lucide-react";
@@ -205,9 +205,9 @@ export default function AIUnitAssistant({
     setResultKey(null);
     setScopeWarnings(null);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: buildPrompt(action),
-        response_json_schema: SCHEMAS[action],
+      const res = await generateAIContent({
+        subject, actionType: action, prompt: buildPrompt(action),
+        schema: SCHEMAS[action],
       });
       const items = res?.items;
       if (!Array.isArray(items) || items.length === 0) {
