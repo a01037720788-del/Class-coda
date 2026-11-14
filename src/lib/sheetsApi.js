@@ -177,3 +177,9 @@ export function generateAIAnswerCode(payload) {
 }
 
 
+
+export function listNotifications(userId) { return call('listNotifications',{user_id:userId}); }
+export function updateNotification(id,changes) { return call('updateNotification',{id,...changes}); }
+export function getTeacherNote(unitId) { return call('getTeacherNote',{unit_id:unitId}); }
+export function saveTeacherNote(data) { return call('saveTeacherNote',data); }
+export function saveStudentPresence(data) { return call('saveStudentPresence',data); }

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { saveStudentPresence } from "@/lib/sheetsApi";
 import { getSessionUser } from "@/lib/auth";
 
 const PAGE_LABELS = {
@@ -29,36 +29,7 @@ export function usePageTracker(pageDetail = "") {
     const label = PAGE_LABELS[path] || path;
     const now = new Date().toISOString();
 
-    if (presenceId.current) {
-      await base44.entities.StudentPresence.update(presenceId.current, {
-        current_page: path,
-        current_page_label: label,
-        page_detail: detail || "",
-        last_seen_at: now,
-      });
-    } else {
-      // 기존 레코드 찾기
-      const existing = await base44.entities.StudentPresence.filter({ student_id: sid });
-      if (existing.length > 0) {
-        presenceId.current = existing[0].id;
-        await base44.entities.StudentPresence.update(presenceId.current, {
-          current_page: path,
-          current_page_label: label,
-          page_detail: detail || "",
-          last_seen_at: now,
-        });
-      } else {
-        const created = await base44.entities.StudentPresence.create({
-          student_id: sid,
-          student_name: u.name || "",
-          current_page: path,
-          current_page_label: label,
-          page_detail: detail || "",
-          last_seen_at: now,
-        });
-        presenceId.current = created.id;
-      }
-    }
+    await saveStudentPresence({ current_page: path, current_page_label: label, page_detail: detail || '' }).catch(err => console.warn('[Presence]',err));
   };
 
   // 페이지 변경 시 기록

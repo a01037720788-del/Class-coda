@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { getTeacherNote, saveTeacherNote } from "@/lib/sheetsApi";
 import { getSessionUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Save, Eye, EyeOff } from "lucide-react";
@@ -21,7 +21,8 @@ export default function TeacherNotePanel({ unitId, unitType, subjectName, onClos
   const loadNote = async () => {
     setLoading(true);
     try {
-      const existing = await base44.entities.UnitTeacherNote.filter({ unit_id: unitId });
+      const result = await getTeacherNote(unitId);
+      const existing = result.note ? [{ id: unitId, notes: result.note }] : [];
       if (existing && existing.length > 0) {
         setNotes(existing[0].notes || "");
         setNoteId(existing[0].id);
@@ -39,21 +40,8 @@ export default function TeacherNotePanel({ unitId, unitType, subjectName, onClos
     setSaving(true);
     try {
       const user = getSessionUser();
-      if (noteId) {
-        await base44.entities.UnitTeacherNote.update(noteId, {
-          notes,
-          updated_by: user?.name || "",
-        });
-      } else {
-        const created = await base44.entities.UnitTeacherNote.create({
-          unit_id: unitId,
-          unit_type: unitType,
-          subject_name: subjectName || "",
-          notes,
-          updated_by: user?.name || "",
-        });
-        if (created) setNoteId(created.id);
-      }
+      await saveTeacherNote({ unit_id: unitId, unit_type: unitType, subject_name: subjectName || '', notes, updated_by: user?.name || '' });
+      setNoteId(unitId);
     } catch (err) {
       console.error("[TeacherNotePanel] 메모 저장 실패:", err);
     }

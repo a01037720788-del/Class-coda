@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { listNotifications, updateNotification } from "@/lib/sheetsApi";
 import { Bell, X, Megaphone, BookOpen, Code2, HelpCircle, Target, MessageSquare, Calendar, Unlock, Info, CheckCheck, Trash2 } from "lucide-react";
 
 const TYPE_CONFIG = {
@@ -44,7 +44,7 @@ export default function NotificationBell({ userId }) {
   const loadNotifications = async () => {
     if (!userId) return;
     try {
-      const all = await base44.entities.Notification.filter({ user_id: userId });
+      const { notifications: all } = await listNotifications(userId);
       const active = all.filter(n => n.is_deleted !== true);
       // 최근순 정렬
       setNotifications(active.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
@@ -57,13 +57,13 @@ export default function NotificationBell({ userId }) {
   const handleDismiss = async (id, e) => {
     e.stopPropagation();
     setNotifications(prev => prev.filter(n => n.id !== id));
-    await base44.entities.Notification.update(id, { is_deleted: true });
+    await updateNotification(id, { is_deleted: true });
   };
 
   const handleRead = async (n) => {
     if (!n.is_read) {
       setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, is_read: true } : x));
-      await base44.entities.Notification.update(n.id, { is_read: true });
+      await updateNotification(n.id, { is_read: true });
     }
     if (n.link_path) window.location.href = n.link_path;
   };
@@ -72,14 +72,14 @@ export default function NotificationBell({ userId }) {
     const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
     if (!unreadIds.length) return;
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    await Promise.all(unreadIds.map(id => base44.entities.Notification.update(id, { is_read: true })));
+    await Promise.all(unreadIds.map(id => updateNotification(id, { is_read: true })));
   };
 
   const handleDeleteAll = async () => {
     const ids = notifications.map(n => n.id);
     setNotifications([]);
     setOpen(false);
-    await Promise.all(ids.map(id => base44.entities.Notification.update(id, { is_deleted: true })));
+    await Promise.all(ids.map(id => updateNotification(id, { is_deleted: true })));
   };
 
   const unread = notifications.filter(n => !n.is_read).length;
