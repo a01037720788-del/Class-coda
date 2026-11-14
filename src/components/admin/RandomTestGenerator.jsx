@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { generatePythonMissionTests } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,20 +75,19 @@ export default function RandomTestGenerator({ mission, onChange }) {
     setGenerating(true);
     setPreview(null);
     try {
-      const res = await base44.functions.invoke("generatePythonMissionTests", {
+      const data = await generatePythonMissionTests({
         answer_code: mission.answer_code,
         test_count: count,
         input_specs: specs,
       });
-      const data = res.data;
       if (data.error) {
         toast({ title: "생성 실패", description: data.error, variant: "destructive" });
         return;
       }
-      setPreview({ test_cases: data.test_cases || [], warning: data.warning || null });
+      setPreview({ test_cases: data.test_cases || [], warning: data.warning || "AI가 계산한 예상 출력입니다. 실제 Python 실행 결과와 대조하세요." });
       toast({ title: `${data.test_cases?.length || 0}개 테스트케이스 생성 완료`, description: data.warning || "미리보기를 확인 후 저장하세요." });
     } catch (err) {
-      toast({ title: "생성 실패", description: err?.response?.data?.error || err?.message || "오류가 발생했습니다.", variant: "destructive" });
+      toast({ title: "생성 실패", description: err?.message || "오류가 발생했습니다.", variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -123,21 +122,20 @@ export default function RandomTestGenerator({ mission, onChange }) {
     }
     setGenerating(true);
     try {
-      const res = await base44.functions.invoke("generatePythonMissionTests", {
+      const data = await generatePythonMissionTests({
         answer_code: mission.answer_code,
         mode: "recalculate",
         existing_test_cases: existingTests,
       });
-      const data = res.data;
       if (data.error) {
         toast({ title: "재계산 실패", description: data.error, variant: "destructive" });
         return;
       }
       onChange({ ...mission, test_cases: data.test_cases });
       setAnswerChanged(false);
-      toast({ title: `예상 출력 ${data.test_cases.length}개 재계산 완료` });
+      toast({ title: `예상 출력 ${data.test_cases.length}개 재계산 완료`, description: data.warning || "실제 Python 실행으로 검증한 결과는 아닙니다." });
     } catch (err) {
-      toast({ title: "재계산 실패", description: err?.response?.data?.error || err?.message || "오류가 발생했습니다.", variant: "destructive" });
+      toast({ title: "재계산 실패", description: err?.message || "오류가 발생했습니다.", variant: "destructive" });
     } finally {
       setGenerating(false);
     }

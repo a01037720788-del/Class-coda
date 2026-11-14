@@ -165,3 +165,9 @@ export function generateAIContent({subject, actionType, prompt, schema}) {
 export function convertPythonUnit({ prompt }) {
   return call("convertPythonUnit", { prompt });
 }
+
+/** 관리자 전용 Python 미션 랜덤 테스트 생성/재계산 (AI 추정, 실제 실행 아님) */
+export function generatePythonMissionTests(payload) {
+  return call("generatePythonMissionTests", payload);
+}
+
