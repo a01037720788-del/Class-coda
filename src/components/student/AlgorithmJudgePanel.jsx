@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { listAlgorithmSubmissions, saveAlgorithmSubmission } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -133,10 +133,7 @@ export default function AlgorithmJudgePanel({ unit, user, onProgressUpdate }) {
   const loadProblemStatuses = useCallback(async () => {
     if (!sid || !unit.id) return;
     try {
-      const rows = await base44.entities.AlgorithmJudgeSubmission.filter({
-        student_id: sid,
-        unit_id: unit.id,
-      });
+      const { submissions: rows } = await listAlgorithmSubmissions(unit.id);
       const statuses = {};
       (rows || []).forEach(r => {
         if (!r.problem_id) return;
@@ -198,14 +195,16 @@ export default function AlgorithmJudgePanel({ unit, user, onProgressUpdate }) {
     setSubmitting(true);
     setJudgeResult(null);
     try {
-      const res = await base44.functions.invoke("judgeAlgorithmProblem", {
-        unit_id: unit.id,
-        problem_id: currentProblem.id,
-        code,
-        student_id: sid,
-        student_name: user?.name || "",
-      });
-      const result = res.data || res;
+      // 브라우저 실행 기반 참고용 채점: 숨김 테스트를 신뢰성 있게 검증할 수 없습니다.
+      const tests = (currentProblem.test_cases || []).filter(tc => !tc.is_hidden && !tc.hidden);
+      if (!tests.length) throw new Error('공개 테스트케이스가 없어 채점할 수 없습니다. 관리자에게 문의하세요.');
+      const execution = await runPython({code, mode:'judge', test_cases:tests});
+      const results = (execution.results || []).map(r => ({...r, status:r.passed?'AC':(r.error?'RE':'WA'), is_hidden:false}));
+      const result = {
+        verdict:execution.verdict || 'RE', passed_count:Number(execution.passed||0),
+        total_count:tests.length, results, advisory:true,
+      };
+      await saveAlgorithmSubmission(unit.id, currentProblem.id, result);
       setJudgeResult(result);
       if (result.verdict === "AC") {
         toast({ title: "✅ 정답!", description: `${result.passed_count} / ${result.total_count} 통과` });

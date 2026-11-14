@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import MultiFileEditor from "@/components/html/MultiFileEditor";
 import { storageSave } from "@/lib/storageService";
 import { useToast } from "@/components/ui/use-toast";
+import { saveHTMLMissionSubmission } from "@/lib/sheetsApi";
 
 export default function HTMLMissionSection({
   unit, prog, mTotal,
@@ -71,14 +72,10 @@ export default function HTMLMissionSection({
               is_unit_completed: rate === 100, last_studied_at: new Date().toISOString(),
             });
             try {
-              const { base44 } = await import("@/api/base44Client");
-              await base44.entities.HTMLMissionSubmission.create({
-                student_id: studentId, student_name: studentData?.name || "",
-                unit_id: unit.id, unit_title: unit.title,
-                mission_number: mNum, mission_title: mission.title,
-                submitted_html: mHtml, submitted_css: mCss, submitted_javascript: mJs,
-                condition_results: results, is_completed: allPassed,
-                submitted_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+              await saveHTMLMissionSubmission({
+                unit_id:unit.id, mission_number:mNum,
+                submission:{html:mHtml,css:mCss,javascript:mJs,mission_title:mission.title,condition_results:results},
+                is_correct:allPassed
               });
               toast({ title: "✅ 제출 완료!", description: "모든 조건을 만족했습니다." });
             } catch (dbError) {

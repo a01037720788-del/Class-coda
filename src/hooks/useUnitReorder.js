@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
+import { saveUnit } from "@/lib/dataAccess";
 
 /**
  * Unit 순서 변경(드래그/↑↓ 버튼) 공용 훅
@@ -26,7 +26,7 @@ export function useUnitReorder({ entityName, toast, onReload }) {
         // 각 Unit의 unit_number를 1부터 순차적으로 update (id 유지, 내용 변경 안 함)
         await Promise.all(
           reorderedUnits.map((unit, idx) =>
-            base44.entities[entityName].update(unit.id, { unit_number: idx + 1 })
+            saveUnit(entityName === "CppUnit" ? "cpp" : entityName === "JuniorPythonUnit" ? "junior_python" : entityName === "COSPro2Unit" ? "cos_pro_2" : entityName === "COSPro3Unit" ? "cos_pro_3" : "python", { ...unit, unit_number: idx + 1 })
           )
         );
         toast({ title: "Unit 순서가 변경되었습니다." });

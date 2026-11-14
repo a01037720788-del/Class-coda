@@ -183,3 +183,8 @@ export function updateNotification(id,changes) { return call('updateNotification
 export function getTeacherNote(unitId) { return call('getTeacherNote',{unit_id:unitId}); }
 export function saveTeacherNote(data) { return call('saveTeacherNote',data); }
 export function saveStudentPresence(data) { return call('saveStudentPresence',data); }
+
+export function listAlgorithmSubmissions(unitId) { return call('listAlgorithmSubmissions', {unit_id:unitId}); }
+export function saveAlgorithmSubmission(unitId, problemId, result) { return call('saveAlgorithmSubmission', {unit_id:unitId,problem_id:problemId,result}); }
+
+export function saveHTMLMissionSubmission(payload) { return call("saveHTMLMissionSubmission",payload); }
