@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { generatePythonMissionTests } from "@/lib/sheetsApi";
+import { generatePythonMissionTests, generateAIAnswerCode } from "@/lib/sheetsApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,11 +14,13 @@ const DATA_TYPES = [
   { value: "choice", label: "선택값" },
 ];
 
-export default function RandomTestGenerator({ mission, onChange }) {
+export default function RandomTestGenerator({ mission, onChange, subject = "python", problem = null }) {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(null); // { test_cases, warning }
   const [answerChanged, setAnswerChanged] = useState(false);
+  const [answerGenerating, setAnswerGenerating] = useState(false);
+  const [answerPreview, setAnswerPreview] = useState(null);
 
   const enabled = mission.random_test_enabled === true;
   const count = mission.random_test_count ?? 10;
@@ -26,6 +28,44 @@ export default function RandomTestGenerator({ mission, onChange }) {
   const existingTests = mission.test_cases || [];
 
   const update = (field, val) => onChange({ ...mission, [field]: val });
+
+  const handleGenerateAnswer = async () => {
+    const source = problem || mission;
+    const description = String(source.description || source.question || source.problem_description || mission.description || "").trim();
+    if (!description) {
+      toast({ title: "문제 설명이 필요합니다.", description: "먼저 문제 설명을 작성해 주세요.", variant: "destructive" });
+      return;
+    }
+    setAnswerGenerating(true);
+    setAnswerPreview(null);
+    try {
+      const data = await generateAIAnswerCode({
+        subject: subject || mission.subject || "python",
+        problem_type: source.problem_type || mission.problem_type || "write",
+        title: source.title || mission.title || "",
+        description,
+        input_condition: source.input_condition || mission.input_condition || "",
+        output_condition: source.output_condition || mission.output_condition || "",
+        default_code: source.default_code || mission.default_code || "",
+        example: source.example || mission.example || "",
+      });
+      if (!data || typeof data.code !== "string" || !data.code.trim()) throw new Error("정답 코드가 반환되지 않았습니다.");
+      setAnswerPreview(data);
+      toast({ title: "AI 정답 코드 생성 완료", description: "코드를 검토한 뒤 적용해 주세요." });
+    } catch (err) {
+      toast({ title: "AI 정답 코드 생성 실패", description: err?.message || "잠시 후 다시 시도해 주세요.", variant: "destructive" });
+    } finally {
+      setAnswerGenerating(false);
+    }
+  };
+
+  const handleApplyAnswer = () => {
+    if (!answerPreview?.code) return;
+    if (mission.answer_code && mission.answer_code !== answerPreview.code && !window.confirm("기존 정답 코드를 AI 코드로 교체하시겠습니까?")) return;
+    handleAnswerCodeChange(answerPreview.code);
+    setAnswerPreview(null);
+    toast({ title: "정답 코드에 적용했습니다.", description: "단원 저장 버튼을 눌러 변경사항을 저장해 주세요." });
+  };
 
   const handleAnswerCodeChange = (val) => {
     update("answer_code", val);
@@ -153,6 +193,26 @@ export default function RandomTestGenerator({ mission, onChange }) {
 
       {enabled && (
         <>
+          {/* 관리자 전용 AI 정답 코드 작성 */}
+          <div className="border border-purple-200 rounded-lg p-2 bg-white space-y-2">
+            <Button type="button" size="sm" variant="outline" onClick={handleGenerateAnswer} disabled={answerGenerating}
+              className="w-full border-purple-300 text-purple-700">
+              {answerGenerating ? <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />정답 코드 작성 중...</> : <><Wand2 className="w-3.5 h-3.5 mr-1" />AI 정답 코드 자동 작성</>}
+            </Button>
+            <p className="text-xs text-gray-500">문제 설명과 입력·출력 조건을 바탕으로 코드를 작성합니다. AI 결과는 실행 검증되지 않았습니다.</p>
+            {answerPreview && (
+              <div className="space-y-2">
+                <textarea className="w-full text-xs font-mono border rounded p-2 bg-gray-50" rows={9}
+                  value={answerPreview.code} onChange={e => setAnswerPreview({ ...answerPreview, code: e.target.value })}
+                  spellCheck={false} />
+                {answerPreview.explanation && <p className="text-xs text-gray-600">{answerPreview.explanation}</p>}
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" onClick={handleApplyAnswer} className="flex-1">정답 코드에 적용</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setAnswerPreview(null)}>취소</Button>
+                </div>
+              </div>
+            )}
+          </div>
           {/* 정답 코드 */}
           <div>
             <Label className="text-xs text-purple-600">정답 코드 (학생에게 보이지 않음)</Label>

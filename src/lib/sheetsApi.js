@@ -171,3 +171,9 @@ export function generatePythonMissionTests(payload) {
   return call("generatePythonMissionTests", payload);
 }
 
+/** 관리자 전용: 문제 설명을 바탕으로 AI 정답 코드 생성 */
+export function generateAIAnswerCode(payload) {
+  return call("generateAIAnswerCode", payload);
+}
+
+
