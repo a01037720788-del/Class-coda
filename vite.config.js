@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
-// GitHub Pages 경로를 사용하며 별도 플랫폼 빌드 플러그인은 필요하지 않습니다.
+// GitHub Pages 배포 경로 설정.
 const IS_GITHUB_PAGES = process.env.CODA_TARGET === 'github-pages';
 // GitHub Pages 하위 경로(base). GH Pages 빌드의 기본값은 /저장소이름/ 입니다.
 // CODA_TARGET 이 없으면 기본 경로 '/' 를 사용합니다.
@@ -20,7 +20,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react-dom/client'],
   },
   optimizeDeps: {
-    // React 관련 패키지를 한 번에 사전 번들링하여 중복 로드를 방지합니다.
+    // React 관련 패키지를 첫 최적화 단계에 포함하여 중복 로드를 방지합니다.
     include: [
       'react', 'react-dom', 'react-dom/client', 'react/jsx-runtime',
       '@tanstack/react-query', 'react-router-dom',

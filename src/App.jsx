@@ -40,7 +40,8 @@ function App() {
   return (
     <AuthProvider>
     <QueryClientProvider client={queryClientInstance}>
-      {/* GitHub Pages의 /Class-coda/ 경로를 React Router에 적용 */}
+      {/* 배포 환경별 base 경로를 basename 으로 지정
+          — GitHub Pages: '/Class-coda' */}
       <Router basename={BASE_PATH || '/'}>
         <Suspense fallback={<PageLoading />}>
           <Routes>

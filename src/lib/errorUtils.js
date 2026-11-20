@@ -25,7 +25,7 @@ export function getErrorMessage(error, fallback = '알 수 없는 오류가 발�
     if (d.detail) return d.detail;
   }
 
-  // 3. Base44 function 응답 (res.data.error)
+  // 3. API 응답 (res.data.error)
   if (error.data?.error) return error.data.error;
   if (error.data?.message) return error.data.message;
 
@@ -45,8 +45,8 @@ export function getErrorMessage(error, fallback = '알 수 없는 오류가 발�
 }
 
 /**
- * Base44 function invoke 에러에서 실제 서버 메시지 추출
- * Base44 SDK가 "Request failed with status code 500"으로 가릴 때 사용.
+ * API 호출 오류에서 실제 서버 메시지 추출
+ * 서버가 일반적인 HTTP 오류 메시지만 반환할 때 사용.
  * 우선순위:
  *   error.response?.data?.error
  *   error.response?.data?.message
@@ -66,14 +66,14 @@ export function extractFunctionError(error, fallback = '요청 중 오류가 발
     if (d.detail) return d.detail;
   }
 
-  // 2. data 직접 (Base44 invoke 응답)
+  // 2. data 직접 (API 응답)
   if (error.data) {
     if (error.data.error) return error.data.error;
     if (error.data.message) return error.data.message;
     if (error.data.detail) return error.data.detail;
   }
 
-  // 3. Base44 SDK가 status code만 반환하는 경우 — message에서 추출
+  // 3. HTTP 상태 코드만 반환되는 경우 — message에서 추출
   if (error.message) {
     const msg = error.message;
     // "Request failed with status code 500" → 서버 응답 body가 없으면 안내

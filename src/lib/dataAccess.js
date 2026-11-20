@@ -1,7 +1,7 @@
 // CODA 학습 데이터 접근 레이어
 // Python / 저학년 Python / C++ 단원은 GitHub JSON에서 조회합니다.
 // 학습 진도, 퀴즈, 미션, 예제 연습은 Google Sheets API에 저장합니다.
-// 미구현 관리 기능은 외부 서비스에 요청하지 않고 명시적으로 오류를 반환합니다.
+// 일부 관리자 기능은 아직 Google Sheets API로 이전되지 않아 비활성화되어 있습니다.
 import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
 import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
 import { adminListUnitOverrides, adminSaveUnitOverride, getStudentUnitOverrides } from "./sheetsApi";
@@ -10,7 +10,7 @@ import { getSessionToken, getSessionUser } from "./auth";
 
 // 미이전 관리 기능은 외부 서비스로 전송하지 않습니다.
 // 지원하지 않는 작업은 명확하게 중단하여 데이터가 다른 서비스에 저장되지 않도록 합니다.
-async function b44Action(action) {
+async function unsupportedAction(action) {
   throw new Error(`현재 CODA 독립 운영에서 지원하지 않는 관리 작업입니다: ${action}`);
 }
 
@@ -351,7 +351,7 @@ export async function saveMissionSubmission(studentId, unitId, missionNumber, da
   });
 }
 
-// ─── 학생 전용 학습 컨텍스트 (Google Sheets API 조회) ───
+// ─── 학생 전용 학습 컨텍스트 (Base44 Entity 직접 조회) ───
 export async function getStudentLearningContext(token) {
   // 이 함수는 더 이상 사용되지 않음 — StudentLayout에서 개별 조회함.
   // 호환성을 위해 null 반환.
@@ -418,26 +418,26 @@ export async function loadAllSubjectsAdmin() {
 }
 
 export async function createSubject(data) {
-  return b44Action("create_subject", data);
+  return unsupportedAction("create_subject", data);
 }
 
 export async function updateSubject(id, data) {
-  return b44Action("update_subject", { id, ...data });
+  return unsupportedAction("update_subject", { id, ...data });
 }
 
 export async function deleteSubject(id) {
-  return b44Action("delete_subject", { id });
+  return unsupportedAction("delete_subject", { id });
 }
 
 export async function hardDeleteSubject(id) {
-  return b44Action("hard_delete_subject", { id });
+  return unsupportedAction("hard_delete_subject", { id });
 }
 
 // ─── Enrollment ────────────────────────────────────────────────────
 export async function loadEnrollments(studentId) {
   if (!studentId) return [];
   try {
-    const data = await b44Action("list_enrollments_by_student", { student_id: studentId });
+    const data = await unsupportedAction("list_enrollments_by_student", { student_id: studentId });
     return data.enrollments || [];
   } catch (err) {
     console.warn("[dataAccess] loadEnrollments 실패:", err.message);
@@ -447,7 +447,7 @@ export async function loadEnrollments(studentId) {
 
 export async function loadAllEnrollments() {
   try {
-    const data = await b44Action("list_enrollments");
+    const data = await unsupportedAction("list_enrollments");
     return data.enrollments || [];
   } catch (err) {
     console.warn("[dataAccess] loadAllEnrollments 실패:", err.message);
@@ -458,7 +458,7 @@ export async function loadAllEnrollments() {
 export async function loadEnrollmentsBySubject(subjectId) {
   if (!subjectId) return [];
   try {
-    const data = await b44Action("list_enrollments_by_subject", { subject_id: subjectId });
+    const data = await unsupportedAction("list_enrollments_by_subject", { subject_id: subjectId });
     return data.enrollments || [];
   } catch (err) {
     console.warn("[dataAccess] loadEnrollmentsBySubject 실패:", err.message);
@@ -467,31 +467,31 @@ export async function loadEnrollmentsBySubject(subjectId) {
 }
 
 export async function createEnrollment(data) {
-  return b44Action("create_enrollment", data);
+  return unsupportedAction("create_enrollment", data);
 }
 
 export async function updateEnrollment(id, data) {
-  return b44Action("update_enrollment", { id, ...data });
+  return unsupportedAction("update_enrollment", { id, ...data });
 }
 
 export async function deleteEnrollment(id) {
-  return b44Action("delete_enrollment", { id });
+  return unsupportedAction("delete_enrollment", { id });
 }
 
 // ─── Admin: 학생 관련 데이터 일괄 삭제 ─────────────────────────────
 export async function deleteProgressByStudent(studentId) {
-  return b44Action("delete_progress_by_student", { student_id: studentId });
+  return unsupportedAction("delete_progress_by_student", { student_id: studentId });
 }
 
 export async function deleteSubmissionsByStudent(studentId) {
-  return b44Action("delete_submissions_by_student", { student_id: studentId });
+  return unsupportedAction("delete_submissions_by_student", { student_id: studentId });
 }
 
 // ─── 학생 저장 검증 ──
 export async function verifyStudentExists(studentId) {
   if (!studentId) return false;
   try {
-    const data = await b44Action("verify_student", { student_id: studentId });
+    const data = await unsupportedAction("verify_student", { student_id: studentId });
     return !!data.exists;
   } catch (err) {
     console.warn("[dataAccess] verifyStudentExists 실패:", err.message);
