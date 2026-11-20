@@ -104,7 +104,7 @@ export default function PythonUnitManagement({ subject = "python", subjectName =
   };
 
   const openEdit = (u) => {
-    // Base44 entity는 전체 데이터를 반환하므로 그대로 사용
+    // 전체 단원 데이터를 반환하므로 그대로 사용
     const loadedQuestions = (u.questions || []).map(q => ({
       code_block: "",
       expected_output: "",

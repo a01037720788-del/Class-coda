@@ -1,14 +1,14 @@
 // CODA 학습 데이터 접근 레이어
 // Python / 저학년 Python / C++ 단원은 GitHub JSON에서 조회합니다.
 // 학습 진도, 퀴즈, 미션, 예제 연습은 Google Sheets API에 저장합니다.
-// 기타 기존 관리자/과목 관리 함수에는 Base44 의존성이 남아 있습니다.
+// 미구현 관리 기능은 외부 서비스에 요청하지 않고 명시적으로 오류를 반환합니다.
 import { loadActiveUnitsFromRepo, loadUnitsFromRepo } from "./unitsRepo";
 import { getStudentProgress as sheetsGetProgress, saveStudentProgress as sheetsSaveProgress, saveQuizResult as sheetsSaveQuiz, saveMissionSubmission as sheetsSaveMission } from "./sheetsApi";
 import { adminListUnitOverrides, adminSaveUnitOverride, getStudentUnitOverrides } from "./sheetsApi";
 import { adminListStudents, adminCreateStudent as sheetsCreateStudent, adminUpdateStudent as sheetsUpdateStudent, adminSetStudentStatus, adminResetStudentPassword } from "./sheetsApi";
 import { getSessionToken, getSessionUser } from "./auth";
 
-// 기존 프로젝트의 미이전 관리 기능을 Base44로 전송하지 않습니다.
+// 미이전 관리 기능은 외부 서비스로 전송하지 않습니다.
 // 지원하지 않는 작업은 명확하게 중단하여 데이터가 다른 서비스에 저장되지 않도록 합니다.
 async function b44Action(action) {
   throw new Error(`현재 CODA 독립 운영에서 지원하지 않는 관리 작업입니다: ${action}`);
@@ -351,7 +351,7 @@ export async function saveMissionSubmission(studentId, unitId, missionNumber, da
   });
 }
 
-// ─── 학생 전용 학습 컨텍스트 (Base44 Entity 직접 조회) ───
+// ─── 학생 전용 학습 컨텍스트 (Google Sheets API 조회) ───
 export async function getStudentLearningContext(token) {
   // 이 함수는 더 이상 사용되지 않음 — StudentLayout에서 개별 조회함.
   // 호환성을 위해 null 반환.

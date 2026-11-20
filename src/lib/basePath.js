@@ -1,5 +1,5 @@
 // 배포 환경별 base 경로를 한 곳에서 관리합니다.
-//  - Base44(미리보기/게시): Vite base = '/'
+//  - 로컬 개발: Vite base = '/'
 //  - GitHub Pages: Vite base = '/Class-coda/' (vite.config.js 참고)
 // Vite 가 빌드 시 import.meta.env.BASE_URL 을 주입하므로 두 환경 모두 자동으로 맞습니다.
 export const BASE_PATH = (import.meta.env.BASE_URL || '/').replace(/\/+$/, ''); // '' 또는 '/Class-coda'

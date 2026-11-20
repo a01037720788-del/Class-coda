@@ -9,7 +9,7 @@ const TOKEN_KEY = 'coda_session_token';
 const USER_KEY = 'coda_session_user';
 
 // 모듈 레벨 사용자 캐시 — useSessionAuth가 서버 검증 후 설정.
-// Base44 폴백 시 localStorage에도 저장되어 페이지 새로고침 후에도 유지.
+// 새로고침 후에도 인증 세션을 유지하기 위해 localStorage에 저장합니다.
 let _cachedUser = null;
 let _freshLoginToken = null;
 

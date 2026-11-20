@@ -2,7 +2,7 @@
  * 독립 코드 실행 레이어 (Code Runner)
  *
  * 학생 Python/C++ 코드를 Base44 Functions 의존 없이 실행할 수 있도록,
- * 외부 샌드박스 실행 환경을 1순위로 사용하고 Base44 Functions를 폴백으로 사용.
+ * 브라우저의 Pyodide를 사용하며 외부 Base44 Functions를 호출하지 않습니다.
  *
  * - Python 1순위: Pyodide (브라우저 내 WebAssembly Python)
  *   - 실제 Python 3 실행 (LLM 시뮬레이션이 아님)
@@ -15,10 +15,10 @@
  *   - 외부 실행 서비스도 사용하지 않습니다. runCpp() 은 실행을 시도하지 않고
  *     "미지원" 결과를 즉시 반환합니다.
  *
- * - 2순위(폴백): Base44 Functions (runPythonCode)
+ * - Base44 서버 폴백은 사용하지 않습니다.
  *   - Pyodide 를 사용할 수 없을 때만 사용
  *
- * 반환 포맷은 기존 base44.functions.invoke("runPythonCode") 의 res.data 와 동일:
+ * 기존 실행기와 호환되는 반환 포맷:
  *   simple: { output, error, exit_code }
  *   judge:  { mode, total, passed, results, verdict, ... }
  */

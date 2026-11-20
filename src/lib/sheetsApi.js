@@ -3,7 +3,7 @@ import { SHEETS_API_URL as FALLBACK_API_URL } from "./sheetsConfig";
 /**
  * Google Apps Script 웹 앱 클라이언트
  *
- * Base44 / Supabase 없이 Google Sheets 백엔드와 통신합니다.
+ * Google Apps Script 웹 앱과 직접 통신합니다.
  * - 인증 판단은 전적으로 서버가 합니다. 브라우저에는 불투명한 토큰만 보관합니다.
  * - Content-Type 을 text/plain 으로 보내 CORS preflight(OPTIONS)를 피합니다.
  *   (Apps Script 웹 앱은 OPTIONS 요청을 처리하지 않습니다)

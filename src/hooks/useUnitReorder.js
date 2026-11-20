@@ -9,7 +9,7 @@ import { saveUnit } from "@/lib/dataAccess";
  * - 저장 실패 시 onReload()로 DB 실제 상태를 다시 불러와 UI 복구
  *
  * @param {Object}   opts
- * @param {string}   opts.entityName  - Base44 entity 이름 (예: "PythonUnit")
+ * @param {string}   opts.entityName  - 단원 종류 식별자 (예: "PythonUnit")
  * @param {Function} opts.toast      - useToast의 toast 함수
  * @param {Function} opts.onReload   - 저장 실패 시 호출할 reload 함수
  * @returns {{ saving: boolean, saveOrder: Function }}

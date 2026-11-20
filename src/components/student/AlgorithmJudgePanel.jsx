@@ -128,7 +128,7 @@ export default function AlgorithmJudgePanel({ unit, user, onProgressUpdate }) {
   }, [unit.id, unit.judge_problems]);
 
   // 문제 상태 로드 (제출 기록에서 최신 verdict 조회)
-  // Base44 entities는 학생(Supabase 인증)에게 401을 반환하므로
+  // 학생 인증 세션과 일치하는 독립 API를 사용하므로
   // Supabase student_submissions 테이블에서 algorithm_problem 타입으로 조회
   const loadProblemStatuses = useCallback(async () => {
     if (!sid || !unit.id) return;

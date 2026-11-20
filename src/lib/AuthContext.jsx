@@ -1,4 +1,4 @@
-// CODA 독립 인증 컨텍스트: Base44 공개 설정/인증 호출 제거
+// CODA 독립 인증 컨텍스트: Google Apps Script 세션 기반
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { validateSession, logout as sheetsLogout } from '@/lib/sheetsApi';
 import { getSessionToken, setSessionUser, clearSession } from '@/lib/auth';

@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
-// GitHub Pages 경로를 유지하면서 Base44 빌드 플러그인을 사용하지 않습니다.
+// GitHub Pages 경로를 사용하며 별도 플랫폼 빌드 플러그인은 필요하지 않습니다.
 const IS_GITHUB_PAGES = process.env.CODA_TARGET === 'github-pages';
 // GitHub Pages 하위 경로(base). GH Pages 빌드의 기본값은 /저장소이름/ 입니다.
 // CODA_TARGET 이 없으면 기본 경로 '/' 를 사용합니다.
@@ -20,12 +20,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react-dom/client'],
   },
   optimizeDeps: {
-    // 핵심 수정: Base44 플러그인의 optimizeDeps.include는 isRunningInSandbox가
-    // true일 때만 적용된다. 샌드박스 모드가 아닐 때는 react/react-dom이
-    // include 목록에 없어 Vite가 런타임에 의존성을 발견하며, 이때 react-dom이
-    // react와 다른 최적화 패스에서 번들링되어 React 중복 인스턴스가 생성된다.
-    // 이 include 목록은 샌드박스 모드 여부와 관계없이 항상 적용되어
-    // 모든 React 의존 패키지를 첫 번째 최적화 패스에 포함시킨다.
+    // React 관련 패키지를 한 번에 사전 번들링하여 중복 로드를 방지합니다.
     include: [
       'react', 'react-dom', 'react-dom/client', 'react/jsx-runtime',
       '@tanstack/react-query', 'react-router-dom',
