@@ -16,8 +16,8 @@ if (isDev) {
   // fetch 이벤트 리스너 없음 — 모든 요청이 네트워크로 직행
 } else {
   // 상대 경로는 이 SW 스크립트의 위치를 기준으로 해석됩니다.
-  // 서브패스 배포(/Class-coda/)와 루트 배포(Base44) 모두에서 동일하게 동작합니다.
-  const CACHE = 'coda-v4';
+  // GitHub Pages 프로젝트 경로(/Class-coda/)를 기준으로 동작합니다.
+  const CACHE = 'coda-v6';
   const PRECACHE = ['./', './index.html'];
 
   self.addEventListener('install', (e) => {
@@ -38,7 +38,7 @@ if (isDev) {
 
     // GET 요청만 처리
     if (e.request.method !== 'GET') return;
-    // 외부 API / base44 → 네트워크 전용
+    // 다른 도메인의 Google Apps Script API는 네트워크 전용
     if (url.hostname !== self.location.hostname) return;
     // 내부 API → 네트워크 전용
     if (url.pathname.startsWith('/api/')) return;
@@ -54,8 +54,13 @@ if (isDev) {
       e.respondWith(
         fetch(e.request)
           .then((res) => {
-            const clone = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, clone));
+            // GitHub Pages는 SPA 내부 경로에 404.html을 반환할 수 있습니다.
+            // 404 응답을 정상 페이지처럼 캐시하지 않고 앱 셸로 대체합니다.
+            if (res.status === 404) return caches.match('./index.html').then((shell) => shell || res);
+            if (res.ok) {
+              const clone = res.clone();
+              caches.open(CACHE).then((c) => c.put(e.request, clone)).catch(() => {});
+            }
             return res;
           })
           .catch(() => caches.match('./index.html'))

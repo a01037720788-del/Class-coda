@@ -1,39 +1,31 @@
-**Welcome to your Base44 project** 
+# CODA 학습 사이트
 
-**About**
+운영 주소: https://a01037720788-del.github.io/Class-coda/
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+## 운영 구조
+- **GitHub Pages**: React/Vite 프런트엔드 배포
+- **Google Apps Script**: 별도 프로젝트에서 로그인, 학생 관리, 학습 기록 및 AI API 처리
+- **Google Sheets**: 학생 및 학습 데이터 보관
 
-This project contains everything you need to run your app locally.
+Google Apps Script는 GitHub 저장소에서 관리하거나 자동 배포하지 않습니다.
 
-**Edit the code in your local development environment**
+## 개발 및 배포
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
-
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
-
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+```bash
+npm ci
+npm run dev
+npm run build
 ```
 
-Run the app: `npm run dev`
+GitHub Actions의 `.github/workflows/deploy.yml`이 `main` 브랜치에서 배포합니다.
+GitHub Pages의 프로젝트 경로는 `/Class-coda/`이며 빌드 시 `CODA_TARGET=github-pages`와 `VITE_BASE_PATH=/Class-coda/`를 사용합니다.
 
-**Publish your changes**
+API 주소는 `VITE_SHEETS_API_URL`(GitHub Actions 변수) 또는 `src/lib/sheetsConfig.js`에서 설정합니다. URL은 비밀키가 아니며 Apps Script가 모든 권한을 서버에서 검증해야 합니다.
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+## 이전 데이터 주의
 
-**Docs & Support**
+`base44/` 폴더는 과거 백엔드 정의의 사본입니다. 현재 프런트엔드의 실행 의존성은 아니지만, **과거 Base44 데이터가 Google Sheets로 자동 이전되는 것은 아닙니다.** 삭제 전에 필요한 데이터와 기능을 별도로 확인하세요.
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+## GitHub Pages 새로고침
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+배포 워크플로에서 `dist/index.html`을 `dist/404.html`로 복사하여 SPA 라우팅을 지원합니다. `public/_redirects`는 GitHub Pages에서 사용되지 않습니다.
