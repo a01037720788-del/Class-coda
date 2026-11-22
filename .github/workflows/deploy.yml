@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check Base44 independence
+        run: npm run check:independence
+
       - name: Build CODA
         env:
           CODA_TARGET: github-pages
