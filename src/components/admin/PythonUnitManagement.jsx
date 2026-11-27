@@ -193,14 +193,14 @@ export default function PythonUnitManagement({ subject = "python", subjectName =
   };
 
   const handleDelete = async (u) => {
-    if (!confirm(`Unit ${u.unit_number}. ${u.title} 을(를) 삭제하시겠습니까?`)) return;
+    if (!confirm(`Unit ${u.unit_number}. ${u.title} 을(를) 학생 화면에서 숨기시겠습니까? 학습 기록은 유지됩니다.`)) return;
     try {
       await saveUnit(subject, { ...u, is_active: false });
-      toast({ title: "삭제 완료" });
+      toast({ title: "단원 숨김 완료" });
       loadUnits();
     } catch (err) {
       console.error("[PythonUnitManagement] 삭제 실패:", err);
-      toast({ title: "삭제 실패", description: err.message, variant: "destructive" });
+      toast({ title: "숨김 실패", description: err.message, variant: "destructive" });
     }
   };
 
@@ -334,7 +334,7 @@ export default function PythonUnitManagement({ subject = "python", subjectName =
                           <Edit className="w-3.5 h-3.5" />
                         </Button>
                         <TeachingButton subjectType={subject} unitId={u.id} disabled={reordering} />
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(u)} className="h-7 w-7 p-0 text-red-500 hover:bg-red-50" disabled={reordering}>
+                        <Button variant="ghost" size="sm" title="학생 화면에서 숨기기 (학습 기록 유지)" aria-label="단원 숨기기" onClick={() => handleDelete(u)} className="h-7 w-7 p-0 text-red-500 hover:bg-red-50" disabled={reordering}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>

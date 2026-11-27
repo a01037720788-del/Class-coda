@@ -170,7 +170,7 @@ export default function COSProblemManagement({ subject, subjectName }) {
           {suggestions[item.id]?.reason && <p className="text-xs text-gray-500 mt-1">AI 분석: {suggestions[item.id].reason} · 추천 유형: {TYPE_OPTIONS.find(t => t.value === suggestions[item.id].problem_type)?.label || "직접 코드 작성"}</p>}<p className="text-xs text-gray-500">{item.is_active === false ? "비공개" : "공개"} · {TYPE_OPTIONS.find(t => t.value === (item.missions?.[0]?.problem_type || item.problem_type || "write"))?.label} · {item.missions?.[0]?.description?.slice(0, 75) || "문제 설명 없음"}</p></div>
         <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => modify(item)}><Pencil className="w-3 h-3 mr-1" />수정</Button>
           <Button size="sm" variant="outline" onClick={() => setActive(item, item.is_active === false)}>{item.is_active === false ? <Eye className="w-3 h-3 mr-1"/> : <EyeOff className="w-3 h-3 mr-1"/>}{item.is_active === false ? "공개" : "비공개"}</Button>
-          <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setActive(item, false)} disabled={item.is_active === false}><Trash2 className="w-3 h-3 mr-1"/>삭제</Button>
+          <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setActive(item, false)} disabled={item.is_active === false}><Trash2 className="w-3 h-3 mr-1"/>숨기기</Button>
         </div>
       </div>)}</div>}
     <Dialog open={open} onOpenChange={v => { if (!saving) setOpen(v); }}><DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editing ? "문제 수정" : "문제 추가"} — {subjectName}</DialogTitle></DialogHeader>

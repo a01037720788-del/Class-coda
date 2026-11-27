@@ -172,7 +172,7 @@ export default function JuniorPythonUnitManagement() {
                   <Edit className="w-3 h-3 mr-1" />수정
                 </Button>
                 <TeachingButton subjectType="junior_python" unitId={u.id} />
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(u)} className="h-7 px-2 text-xs text-red-500 hover:text-red-600">
+                <Button variant="ghost" size="sm" title="학생 화면에서 숨기기 (학습 기록 유지)" aria-label="단원 숨기기" onClick={() => handleDelete(u)} className="h-7 px-2 text-xs text-red-500 hover:text-red-600">
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </div>

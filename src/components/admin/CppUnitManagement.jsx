@@ -55,7 +55,6 @@ export default function CppUnitManagement() {
   const [form, setForm] = useState(emptyForm(0));
   const [activeTab, setActiveTab] = useState("concept");
   const [saving, setSaving] = useState(false);
-  const [deletingAll, setDeletingAll] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { loadUnits(); }, []);
@@ -166,13 +165,13 @@ export default function CppUnitManagement() {
     } catch (err) { toast({ title: "숨김 실패", description: err.message, variant: "destructive" }); }
   };
 
-  const handleDeleteAll = async () => {
-    toast({ title: "전체 삭제 차단", description: "학생 학습 기록 보호를 위해 전체 삭제 기능은 지원하지 않습니다.", variant: "destructive" });
-  };
-
   const toggleActive = async (u) => {
-    await saveUnit("cpp", { ...u, is_active: !(u.is_active !== false) });
-    loadUnits();
+    try {
+      await saveUnit("cpp", { ...u, is_active: !(u.is_active !== false) });
+      await loadUnits();
+    } catch (err) {
+      toast({ title: "상태 변경 실패", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleApplyAIGeneratedUnit = (data, mode, mergeMode) => {
@@ -220,12 +219,7 @@ export default function CppUnitManagement() {
           <Button onClick={openAdd} size="sm" className="bg-blue-600 hover:bg-blue-700">
             <Plus className="w-3.5 h-3.5 mr-1" />Unit 추가
           </Button>
-          {units.length > 0 && (
-            <Button onClick={handleDeleteAll} size="sm" variant="outline" disabled={deletingAll} className="text-red-600 border-red-300 hover:bg-red-50">
-              <Trash2 className="w-3.5 h-3.5 mr-1" />
-              {deletingAll ? "C++ Unit 삭제 중..." : "전체 삭제"}
-            </Button>
-          )}
+
         </div>
       </div>
 
@@ -260,7 +254,7 @@ export default function CppUnitManagement() {
                 <Edit className="w-3.5 h-3.5" />
               </Button>
               <TeachingButton subjectType="cpp" unitId={u.id} />
-              <Button variant="ghost" size="sm" onClick={() => handleDelete(u)} className="h-7 w-7 p-0 text-red-500 hover:bg-red-50">
+              <Button variant="ghost" size="sm" title="학생 화면에서 숨기기 (학습 기록 유지)" aria-label="단원 숨기기" onClick={() => handleDelete(u)} className="h-7 w-7 p-0 text-red-500 hover:bg-red-50">
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
