@@ -8,17 +8,8 @@ import PythonCodeEditor from "./PythonCodeEditor";
 import { useToast } from "@/components/ui/use-toast";
 import { getSessionToken } from "@/lib/auth";
 
-import { storageKeys, storageSave, storageLoad } from "@/lib/storageService";
 import { compareOutput } from "@/lib/stdinUtils";
 import { loadUnitsFromRepo } from "@/lib/unitsRepo";
-
-// 미션별로 독립된 키 사용 (unitId + missionNumber)
-function loadSavedMission(unitId, mNum) {
-  return storageLoad(storageKeys.pythonMissionState(unitId, mNum), null);
-}
-function saveMissionToDisk(unitId, mNum, data) {
-  storageSave(storageKeys.pythonMissionState(unitId, mNum), data);
-}
 
 // ─── 애니메이션 래퍼 ──────────────────────────────────────────────────────────
 function Collapsible({ open, children }) {
@@ -117,17 +108,6 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
     };
   }, [expandedEditors]);
 
-
-  // 미션 로드 시 각 미션의 저장된 상태 복원
-  useEffect(() => {
-    const restored = {};
-    activeMissions.forEach(m => {
-      const mNum = m.number || activeMissions.indexOf(m) + 1;
-      const saved = loadSavedMission(unitId, mNum);
-      if (saved) restored[mNum] = saved;
-    });
-    setSubmitted(restored);
-  }, [unitId, activeMissions.length]);
 
   const getSid = () => user?.student_id;
   const completedIds = (Array.isArray(progress?.completed_mission_ids)
@@ -295,13 +275,13 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
         // UI에는 결과 표시 (정답 판정은 유지)
         const subData = { done: true, isCorrect, output, saveFailed: true };
         setSubmitted(prev => ({ ...prev, [mNum]: subData }));
-        saveMissionToDisk(unitId, mNum, subData);
+
         return;
       }
 
       const subData = { done: true, isCorrect, output };
       setSubmitted(prev => ({ ...prev, [mNum]: subData }));
-      saveMissionToDisk(unitId, mNum, subData);
+
       if (onProgressUpdate) await onProgressUpdate();
     } catch (error) {
       console.error("[MissionPanel] 제출 중 예외:", error);

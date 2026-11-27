@@ -272,6 +272,7 @@ export default function StudentJuniorPythonUnits() {
             {selectedUnit.questions?.length > 0 && (
               <section id="questions" className="scroll-mt-20 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                 <QuestionPanel
+                  key={`question:${user?.student_id}:${selectedUnit.id}`}
                   questions={selectedUnit.questions || []}
                   user={user}
                   unitId={selectedUnit.id}
@@ -286,6 +287,7 @@ export default function StudentJuniorPythonUnits() {
             {selectedUnit.missions?.length > 0 && (
               <section id="missions" className="scroll-mt-20 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                 <MissionPanel
+                  key={`mission:${user?.student_id}:${selectedUnit.id}`}
                   missions={selectedUnit.missions || []}
                   user={user}
                   unitId={selectedUnit.id}

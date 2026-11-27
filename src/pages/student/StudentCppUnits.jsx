@@ -321,6 +321,7 @@ export default function StudentCppUnits() {
             {selectedUnit.questions?.length > 0 && (
               <section id="questions" className="scroll-mt-20 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                 <QuestionPanel
+                  key={`question:${user?.student_id}:${selectedUnit.id}`}
                   questions={selectedUnit.questions || []}
                   user={user}
                   unitId={selectedUnit.id}

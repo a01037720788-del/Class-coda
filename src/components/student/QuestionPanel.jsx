@@ -6,14 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock, ChevronsUpDown, RotateCcw, Circle, AlertCircle } from "lucide-react";
 import { getSessionToken } from "@/lib/auth";
 
-const LS_KEY = (unitId) => `question_panel_${unitId}`;
-function loadSaved(unitId) {
-  try { return JSON.parse(localStorage.getItem(LS_KEY(unitId)) || "{}"); } catch { return {}; }
-}
-function saveToDisk(unitId, data) {
-  try { localStorage.setItem(LS_KEY(unitId), JSON.stringify(data)); } catch {}
-}
-
 // ─── 애니메이션 래퍼 ──────────────────────────────────────────────────────────
 function Collapsible({ open, children }) {
   const ref = useRef(null);
@@ -589,19 +581,19 @@ const DIFFICULTY_COLORS = { easy: "bg-green-50 text-green-600", medium: "bg-yell
 
 // ─── Main QuestionPanel ───────────────────────────────────────────────────────
 export default function QuestionPanel({ questions = [], user, unitId, unitTitle, progress, onProgressUpdate, unitType }) {
-  const [submitted, setSubmitted] = useState(() => loadSaved(unitId));
+  const [submitted, setSubmitted] = useState({});
   const [openIdx, setOpenIdx] = useState(null);
   const [showCompleted, setShowCompleted] = useState(true);
   const [saveError, setSaveError] = useState(null);
   const [retrying, setRetrying] = useState({});
   const [retryVersion, setRetryVersion] = useState({});
-  const [everCompleted, setEverCompleted] = useState(() => Object.keys(loadSaved(unitId)).filter(k => loadSaved(unitId)[k]?.isCorrect === true).map(Number));
+  const [everCompleted, setEverCompleted] = useState([]);
   // 서버 진도와 현재 화면에서 정답 처리한 결과를 함께 반영합니다.
   // 저장된 ID는 숫자/문자열 형태 모두 허용합니다.
   const completedIds = (Array.isArray(progress?.completed_question_ids)
     ? progress.completed_question_ids : []).map(Number).filter(Number.isFinite);
   const isQuestionCompleted = (i) =>
-    completedIds.includes(i) || everCompleted.includes(i) || submitted[i]?.isCorrect === true;
+    completedIds.includes(i) || everCompleted.includes(i);
 
   const getSid = () => user?.student_id;
   const toggle = (i) => setOpenIdx(prev => prev === i ? null : i);
@@ -615,11 +607,11 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
   const handleSubmit = async (qIdx, qNum, qType, answer, isCorrect) => {
     // 1. 정답 판정 UI 먼저 표시 (DB 저장 실패와 무관하게 화면에 결과 표시)
     const alreadyCompleted = isQuestionCompleted(qIdx);
-    if (isCorrect === true) setEverCompleted(prev => [...new Set([...prev, qIdx])]);
+
     const newState = { answer, isCorrect, done: true, submittedAt: new Date().toISOString() };
     const next = { ...submitted, [qIdx]: newState };
     setSubmitted(next);
-    if (!alreadyCompleted) saveToDisk(unitId, next);
+
     if (isCorrect === true) setRetrying(prev => ({ ...prev, [qIdx]: false }));
     setSaveError(null);
 
@@ -651,6 +643,7 @@ export default function QuestionPanel({ questions = [], user, unitId, unitTitle,
           question_progress_rate: rate,
           last_studied_at: new Date().toISOString(),
         });
+        if (isCorrect === true) setEverCompleted(prev => [...new Set([...prev, qIdx])]);
       } catch (err) {
         console.error("[QuestionPanel] saveQuestionResult RPC 실패:", {
           errorMessage: err?.message,

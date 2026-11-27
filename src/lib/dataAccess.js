@@ -180,7 +180,7 @@ export async function loadAllProgress(studentId) {
   assertOwnStudent(studentId);
   const result = await readLearning();
   return (result.progress || [])
-    .filter(r => !r.student_id || String(r.student_id) === String(studentId))
+    .filter(r => String(r.student_id) === String(studentId))
     .map(normalizeProgress);
 }
 export async function loadProgress(studentId, unitId) {
@@ -194,7 +194,7 @@ function normalizedIds(value, count) {
     try { ids = JSON.parse(ids); } catch { ids = []; }
   }
   if (!Array.isArray(ids)) return [];
-  return [...new Set(ids.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n < count))].sort((a, b) => a - b);
+  return [...new Set(ids.filter(v => typeof v === "number" || (typeof v === "string" && /^\d+$/.test(v))).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n < count))].sort((a, b) => a - b);
 }
 
 const PROGRESS_ONLY_FIELDS = [
@@ -310,8 +310,7 @@ async function saveCompletedItem(studentId, unitId, type, index, isCorrect, cont
   const existing = await loadProgress(studentId, unitId);
   const key = `completed_${type}_ids`;
   const current = normalizedIds(existing?.[key], count);
-  const incoming = normalizedIds(asObject(progressUpdate)[key], count);
-  const ids = isCorrect ? [...new Set([...current, ...incoming, idx])].sort((a, b) => a - b) : current;
+  const ids = isCorrect ? [...new Set([...current, idx])].sort((a, b) => a - b) : current;
   const update = { [key]: ids };
   // One compact latest submission per item, not a growing attempt history.
   if (submission && (type === "question" || type === "mission")) {
