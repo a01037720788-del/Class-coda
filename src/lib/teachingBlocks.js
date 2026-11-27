@@ -1,5 +1,7 @@
 // 과목 유형별 Unit 엔티티 매핑
 export const UNIT_ENTITY_MAP = {
+  cos_pro_2: { lang: "python", label: "COS PRO 2급" },
+  cos_pro_3: { lang: "python", label: "COS PRO 3급" },
   python: { entity: "PythonUnit", lang: "python", label: "Python" },
   junior_python: { entity: "JuniorPythonUnit", lang: "python", label: "저학년 Python" },
   cpp: { entity: "CppUnit", lang: "cpp", label: "C++" },
