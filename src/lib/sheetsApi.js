@@ -36,12 +36,21 @@ async function call(action, payload = {}) {
   if (!isConfigured()) {
     throw new Error("백엔드 주소가 설정되지 않았습니다. (VITE_SHEETS_API_URL)");
   }
-  const res = await fetch(API_URL, {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), action === "validateSession" ? 15000 : 120000);
+  let res, text;
+  try {
+  res = await fetch(API_URL, {
+    signal: controller.signal,
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action, token: getToken(), ...payload }),
   });
-  const text = await res.text();
+  text = await res.text();
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("서버 응답 시간이 초과되었습니다. 다시 시도해 주세요.");
+    throw error;
+  } finally { clearTimeout(timer); }
   let data;
   try {
     data = JSON.parse(text);

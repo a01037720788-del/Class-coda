@@ -190,18 +190,22 @@
     </div>
 
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
     <script>
-      // 스플래시 숨기기 (React 앱 로드 후)
-      window.addEventListener('load', function () {
-        setTimeout(function () {
-          var splash = document.getElementById('splash');
-          if (splash) {
-            splash.classList.add('hide');
-            setTimeout(function () { splash.remove(); }, 500);
-          }
-        }, 1400);
-      });
+      (function () {
+        var splash = document.getElementById('splash');
+        var timer = setTimeout(function () {
+          if (!splash.isConnected) return;
+          document.getElementById('splash-sub').textContent = '화면을 불러오지 못했습니다. 다시 시도해 주세요.';
+          document.getElementById('splash-dots').style.display = 'none';
+          var button = document.createElement('button');
+          button.textContent = '다시 불러오기';
+          button.style.cssText = 'margin-top:24px;padding:12px 20px;border-radius:8px;background:white;color:#5b21b6';
+          button.onclick = function () { location.reload(); };
+          splash.appendChild(button);
+        }, 15000);
+        window.codaAppReady = function () { clearTimeout(timer); splash.remove(); };
+      })();
     </script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
