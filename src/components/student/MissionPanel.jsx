@@ -198,14 +198,14 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
             code, problem_type: m.problem_type || "write", description: m.description,
             input_condition: m.input_condition, output_condition: m.output_condition,
             ai_rubric: m.ai_rubric, reference_code: m.answer_code,
-            output, error, tests_passed: testCases.length ? isCorrect : null,
+            output, error, tests_passed: (testCases.length || expected) ? isCorrect : null,
           });
           setAiFeedback(prev => ({...prev, [mNum]: ai.feedback}));
-          if (testCases.length === 0) isCorrect = ai.is_correct === true && !error;
+          if (testCases.length === 0 && !expected) isCorrect = ai.is_correct === true && !error;
         } catch (aiError) {
           setAiFeedback(prev => ({...prev, [mNum]: `AI 채점 실패: ${aiError.message}`}));
-          // AI 단독 채점이 필요한 문제는 오류 시 정답으로 처리하지 않습니다.
-          if (testCases.length === 0) isCorrect = false;
+          // AI 단독 채점이 필요한 문제만 오류 시 정답으로 처리하지 않습니다.
+          if (testCases.length === 0 && !expected) isCorrect = false;
         }
       }
       // 채점 기준이 없는 미션은 자동 완료하지 않습니다.
