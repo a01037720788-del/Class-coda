@@ -183,9 +183,9 @@ export async function loadAllProgress(studentId) {
     .filter(r => String(r.student_id) === String(studentId))
     .map(normalizeProgress);
 }
-export async function loadProgress(studentId, unitId) {
+export async function loadProgress(studentId, unitId, subject) {
   if (!studentId || !unitId) return null;
-  return (await loadAllProgress(studentId)).find(p => String(p.unit_id) === String(unitId)) || null;
+  return (await loadAllProgress(studentId)).find(p => String(p.unit_id) === String(unitId) && (!subject || p.subject_type === subject)) || null;
 }
 // 진도 ID를 정규화하고, 현재 단원의 실제 항목 수를 기준으로 완료를 계산합니다.
 function normalizedIds(value, count) {
@@ -210,7 +210,7 @@ export async function saveProgress(studentId, unitId, data, context = {}) {
   assertOwnStudent(studentId);
   const subject = await resolveSubject(unitId, context);
   const [existing, units] = await Promise.all([
-    loadProgress(studentId, unitId), mergeStudentUnits(subject)
+    loadProgress(studentId, unitId, subject), mergeStudentUnits(subject)
   ]);
   const unit = units.find(u => String(u.id) === String(unitId));
   if (!unit) throw new Error(`단원 정보를 찾을 수 없습니다: ${unitId}`);
@@ -307,7 +307,7 @@ async function saveCompletedItem(studentId, unitId, type, index, isCorrect, cont
   const idx = Number(index);
   if (!Number.isInteger(idx) || idx < 0 || idx >= count) throw new Error(`잘못된 ${type} 항목 번호입니다: ${index}`);
   if (!isCorrect && !submission) return { saved: false, reason: "incorrect" };
-  const existing = await loadProgress(studentId, unitId);
+  const existing = await loadProgress(studentId, unitId, subject);
   const key = `completed_${type}_ids`;
   const current = normalizedIds(existing?.[key], count);
   const ids = isCorrect ? [...new Set([...current, idx])].sort((a, b) => a - b) : current;

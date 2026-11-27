@@ -239,6 +239,7 @@ export default function StudentPythonUnits({ subject = "python", subjectName = "
             {selectedUnit.example_codes?.length > 0 && (
               <section id="codes" className="scroll-mt-20 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                 <ExampleCodePanel
+                  key={`example:${user?.student_id}:${selectedUnit.id}`}
                   exampleCodes={selectedUnit.example_codes || []}
                   user={user}
                   unitId={selectedUnit.id}

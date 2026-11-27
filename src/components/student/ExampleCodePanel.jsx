@@ -63,7 +63,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
     });
     setStudentCodes(codes);
     setResults(res);
-    setLocalCompleted(normalizeIds(storageLoad(exampleCompletionKey(sid, unitId), [])));
+    setLocalCompleted([]); // 서버 진도를 기준으로 복원
   }, [sid, unitId, exampleCodes.length]);
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function ExampleCodePanel({ exampleCodes = [], user, unitId, unit
     setSubmitting(s => ({ ...s, [idx]: true }));
     try {
       // 아직 실행 결과가 없으면 자동 실행
-      let resultData = results[idx];
+      let resultData = null; // 제출 시 현재 코드와 입력으로 다시 실행
       let expected = ec.expected_output || "";
 
       // input()이 있거나 stdin이 있으면 원본 코드를 같은 stdin으로 실행하여 동적 expected_output 생성

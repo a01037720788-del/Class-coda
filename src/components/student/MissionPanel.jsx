@@ -187,7 +187,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
         }
         output = execResult?.output || "";
         error = execResult?.error || "";
-        isCorrect = expected ? (!error && compareOutput(output, expected, gradingMode, code)) : true;
+        isCorrect = !!expected && !error && compareOutput(output, expected, gradingMode, code);
       }
 
       // AI 채점은 COS PRO에만 적용. 실행 테스트가 있으면 테스트 판정이 우선합니다.
@@ -208,8 +208,11 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
           if (testCases.length === 0) isCorrect = false;
         }
       }
-      // COS PRO 문제는 판정 근거가 없을 때 자동 정답 처리하지 않습니다.
-      if (isCos && !testCases.length && !expected && m.ai_grading !== true) isCorrect = false;
+      // 채점 기준이 없는 미션은 자동 완료하지 않습니다.
+      if (!testCases.length && !expected && !(isCos && m.ai_grading === true)) {
+        toast({ title: "채점 기준 없음", description: "선생님에게 예상 출력 또는 테스트 케이스 설정을 요청해 주세요.", variant: "destructive" });
+        return;
+      }
 
       // ── 2단계: DB 제출 저장 + 진행도 업데이트 (단일 RPC 트랜잭션) ────────
       const shouldUnlock = isCorrect === true;
@@ -425,7 +428,7 @@ export default function MissionPanel({ missions = [], user, unitId, unitTitle, p
                     {aiFeedback[mNum] && <div className="text-sm p-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 whitespace-pre-wrap"><strong>AI 피드백</strong><p className="mt-1 font-normal">{aiFeedback[mNum]}</p></div>}
                     {sub && (
                       <div className={`text-sm p-3 rounded-xl border font-semibold ${sub.isCorrect ? "bg-green-50 border-green-200 text-green-700" : "bg-yellow-50 border-yellow-200 text-yellow-700"}`}>
-                        {sub.isCorrect ? "🎉 정답! 미션 완료!" : "💡 정답 조건을 충족하지 못했습니다. 다시 확인해 보세요."}
+                        {sub.saveFailed ? "제출 기록 저장 실패 — 다시 제출해 주세요." : sub.isCorrect ? "🎉 정답! 미션 완료!" : "💡 정답 조건을 충족하지 못했습니다. 다시 확인해 보세요."}
                       </div>
                     )}
                     {runResult && m.expected_output && !sub && (
