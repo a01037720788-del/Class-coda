@@ -33,96 +33,19 @@
       }(window.location));
     </script>
 
+    <link rel="manifest" href="%BASE_URL%manifest.json" />
+    <link rel="icon" type="image/png" href="%BASE_URL%icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icons/icon-192.png" />
     <script>
-      // ── PWA 아이콘 + Manifest 동적 생성 ──
-      (function () {
-        function makeIcon(size) {
-          try {
-            const c = document.createElement('canvas');
-            c.width = c.height = size;
-            const ctx = c.getContext('2d');
-            // 배경 그라디언트
-            const g = ctx.createLinearGradient(0, 0, size, size);
-            g.addColorStop(0, '#7c3aed');
-            g.addColorStop(1, '#5b21b6');
-            ctx.fillStyle = g;
-            // 둥근 모서리
-            const r = size * 0.22;
-            ctx.beginPath();
-            ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
-            ctx.quadraticCurveTo(size, 0, size, r);
-            ctx.lineTo(size, size - r);
-            ctx.quadraticCurveTo(size, size, size - r, size);
-            ctx.lineTo(r, size);
-            ctx.quadraticCurveTo(0, size, 0, size - r);
-            ctx.lineTo(0, r);
-            ctx.quadraticCurveTo(0, 0, r, 0);
-            ctx.closePath();
-            ctx.fill();
-            // 'C' 텍스트
-            ctx.fillStyle = 'white';
-            ctx.font = '900 ' + Math.floor(size * 0.52) + 'px -apple-system,BlinkMacSystemFont,sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('C', size / 2, size / 2 + size * 0.02);
-            return c.toDataURL('image/png');
-          } catch (e) { return null; }
-        }
-
-        const icon192 = makeIcon(192);
-        const icon512 = makeIcon(512);
-
-        if (!icon192) return;
-
-        // apple-touch-icon 설정
-        const appleLink = document.createElement('link');
-        appleLink.rel = 'apple-touch-icon';
-        appleLink.href = icon192;
-        document.head.appendChild(appleLink);
-
-        // favicon 설정
-        const favicon = document.createElement('link');
-        favicon.rel = 'icon';
-        favicon.type = 'image/png';
-        favicon.href = icon192;
-        document.head.appendChild(favicon);
-
-        // sessionStorage에 저장 (React 컴포넌트에서 사용)
-        try {
-          sessionStorage.setItem('pwa-icon-192', icon192);
-          sessionStorage.setItem('pwa-icon-512', icon512 || icon192);
-        } catch (e) {}
-
-        // manifest.json 동적 주입 (Blob URL)
-        const manifest = {
-          name: 'CODA Practice Judge',
-          short_name: 'CODA',
-          description: 'CODA 학원 학습 플랫폼',
-          start_url: '%BASE_URL%',
-          scope: '%BASE_URL%',
-          display: 'standalone',
-          background_color: '#7c3aed',
-          theme_color: '#7c3aed',
-          orientation: 'portrait-primary',
-          lang: 'ko',
-          icons: [
-            { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-            { src: icon512 || icon192, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-          ],
-          shortcuts: [
-            { name: '대시보드', short_name: '대시보드', url: '%BASE_URL%admin/dashboard' },
-            { name: '학생 홈', short_name: '학생 홈', url: '%BASE_URL%student/home' }
-          ],
-          prefer_related_applications: false
-        };
-
-        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-        const manifestURL = URL.createObjectURL(blob);
-        const manifestLink = document.createElement('link');
-        manifestLink.rel = 'manifest';
-        manifestLink.href = manifestURL;
-        document.head.appendChild(manifestLink);
-      })();
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        window.codaInstallPrompt = event;
+        window.dispatchEvent(new Event('coda-install-ready'));
+      });
+      window.addEventListener('appinstalled', function () {
+        window.codaInstallPrompt = null;
+        window.codaInstalled = true;
+      });
     </script>
 
     <style>

@@ -6,7 +6,6 @@ import { logout as logoutFromSheets } from "@/lib/sheetsApi";
 import { Home, Code2, Settings, LogOut, GraduationCap, Menu, X } from "lucide-react";
 import { usePageTracker } from "@/hooks/usePageTracker";
 import NotificationBell from "@/components/common/NotificationBell";
-import PWAInstallBanner from "@/components/common/PWAInstallBanner";
 import { SUBJECT_CONFIGS, resolveActiveSubjects } from "@/utils/subjectAccess";
 import { appPath } from "@/lib/basePath";
 
@@ -110,7 +109,6 @@ export default function StudentLayout() {
 
   return (
     <div className="min-h-screen bg-[#f0f0f5]">
-      <PWAInstallBanner />
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (

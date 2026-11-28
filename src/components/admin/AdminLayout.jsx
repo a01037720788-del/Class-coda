@@ -5,7 +5,6 @@ import { isAdmin, clearSession } from "@/lib/auth";
 import { logout as logoutFromSheets } from "@/lib/sheetsApi";
 import { Users, LogOut, Crown, Menu, X, BookOpen } from "lucide-react";
 import NotificationBell from "@/components/common/NotificationBell";
-import PWAInstallBanner from "@/components/common/PWAInstallBanner";
 import { appPath } from "@/lib/basePath";
 
 const baseMenuItems = [
@@ -206,7 +205,6 @@ export default function AdminLayout() {
         })}
       </nav>
 
-      <PWAInstallBanner />
     </div>
   );
 }

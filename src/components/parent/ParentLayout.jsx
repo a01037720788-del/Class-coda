@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { getParentSession, clearParentSession } from "@/lib/parentAuth";
 import { Home, BookOpen, MessageSquare, Calendar, LogOut, Heart, Menu, X } from "lucide-react";
-import PWAInstallBanner from "@/components/common/PWAInstallBanner";
 
 const menuItems = [
   { path: "/parent/home", label: "홈", icon: Home },
@@ -160,7 +159,6 @@ export default function ParentLayout() {
         })}
       </nav>
 
-      <PWAInstallBanner />
     </div>
   );
 }
