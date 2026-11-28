@@ -104,8 +104,8 @@ export function getStudentProgress(subject) {
   return call("getStudentProgress", subject ? { subject } : {});
 }
 
-export function saveStudentProgress({ subject, unitId, completed, data }) {
-  return call("saveStudentProgress", { subject, unit_id: unitId, completed, data });
+export function saveStudentProgress({ subject, unitId, completed, data, patch, counts }) {
+  return call("saveStudentProgress", { subject, unit_id: unitId, completed, data, patch, counts });
 }
 
 export function saveQuizResult({ subject, unitId, itemNumber, score, answer, data }) {

@@ -242,8 +242,16 @@ export async function saveProgress(studentId, unitId, data, context = {}) {
   merged.student_name = context.studentName || existing?.student_name || "";
   merged.unit_title = context.unitTitle || existing?.unit_title || unit.title || "";
   merged.last_studied_at = new Date().toISOString();
-  await sheetsSaveProgress({ subject, unitId: String(unitId), completed: isDone, data: merged });
-  return { ...merged, student_id: studentId, unit_id: unitId };
+  const patch = {};
+  for (const key of PROGRESS_ONLY_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) patch[key] = data[key];
+  }
+  patch.student_name = merged.student_name;
+  patch.unit_title = merged.unit_title;
+  patch.last_studied_at = merged.last_studied_at;
+  const result = await sheetsSaveProgress({ subject, unitId: String(unitId), completed: isDone, data: merged, patch, counts });
+  if (!result?.data) throw new Error("진도 저장 응답을 확인할 수 없습니다. 관리자에게 문의하세요.");
+  return { ...result.data, student_id: studentId, unit_id: unitId };
 }
 export async function loadSubmissions(studentId, unitId, itemType) {
   if (!studentId || !unitId) return [];
@@ -311,15 +319,14 @@ async function saveCompletedItem(studentId, unitId, type, index, isCorrect, cont
   const key = `completed_${type}_ids`;
   const current = normalizedIds(existing?.[key], count);
   const ids = isCorrect ? [...new Set([...current, idx])].sort((a, b) => a - b) : current;
-  const update = { [key]: ids };
+  const update = { [key]: isCorrect ? [idx] : [] };
   // One compact latest submission per item, not a growing attempt history.
   if (submission && (type === "question" || type === "mission")) {
     const field = type === "question" ? "latest_question_answers" : "latest_mission_codes";
-    const old = asObject(existing?.[field]);
-    update[field] = { ...old, [String(idx)]: submission };
+    update[field] = { [String(idx)]: submission };
   }
-  await saveProgress(studentId, unitId, update, context);
-  return { saved: true, completed_ids: ids };
+  const saved = await saveProgress(studentId, unitId, update, context);
+  return { saved: true, completed_ids: saved[key] };
 }
 export async function saveExamplePractice(studentId, unitId, exampleIndex, data, context = {}, progressUpdate = null) {
   return saveCompletedItem(studentId, unitId, "example", exampleIndex, data?.is_matched === true, context, progressUpdate);
